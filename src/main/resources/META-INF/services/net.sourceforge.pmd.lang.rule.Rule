@@ -1,0 +1,7 @@
+edu.vt.cs.webcat.rules.RegexRule
+edu.vt.cs.webcat.rules.LineLengthRule
+edu.vt.cs.webcat.rules.UppercaseLongLiteralRule
+edu.vt.cs.webcat.rules.StrictJavadocRule
+edu.vt.cs.webcat.rules.IndentationRule
+edu.vt.cs.webcat.rules.WhitespaceAndPaddingRule
+edu.vt.cs.webcat.rules.LineLayoutRule

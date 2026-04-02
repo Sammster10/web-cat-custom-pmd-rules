@@ -1,0 +1,43 @@
+plugins {
+    id 'java'
+}
+
+group = 'edu.vt.cs.webcat'
+version = '1.0-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation "net.sourceforge.pmd:pmd-core:7.21.0"
+    implementation "net.sourceforge.pmd:pmd-java:7.21.0"
+
+    testImplementation "org.junit.jupiter:junit-jupiter:5.11.4"
+    testRuntimeOnly "org.junit.platform:junit-platform-launcher"
+    testImplementation "org.slf4j:slf4j-simple:1.7.36"
+}
+
+test {
+    useJUnitPlatform()
+    testLogging {
+        events "passed", "failed"
+        showExceptions true
+        showCauses true
+        showStackTraces false
+        exceptionFormat "full"
+    }
+}
+
+sourceSets {
+    test {
+        java {
+            exclude '**/WhitespaceAndPaddingRuleTest.java'
+        }
+    }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.compilerArgs += ['-Xdiags:verbose']
+}
+
