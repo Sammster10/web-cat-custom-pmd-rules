@@ -105,11 +105,12 @@ public class IndentationRule extends AbstractRule {
             }
 
             String strippedLine = stripLiteralContents(line, insideBlockComment);
+            boolean lineIsComment = isCommentLine(line, insideBlockComment);
 
             int leadingClosers = countLeadingClosers(strippedLine);
             int expectedDepth = Math.max(0, currentDepth - leadingClosers);
 
-            if (!line.isBlank() && !containsTabs(line)) {
+            if (!line.isBlank() && !containsTabs(line) && !lineIsComment) {
                 int leadingSpaceCount = countLeadingSpaces(line);
                 int expectedSpaces = expectedDepth * indentSize;
 
@@ -133,6 +134,14 @@ public class IndentationRule extends AbstractRule {
 
             offset += line.length() + 1;
         }
+    }
+
+    private boolean isCommentLine(String line, boolean insideBlockComment) {
+        if (insideBlockComment) {
+            return true;
+        }
+        String trimmed = line.stripLeading();
+        return trimmed.startsWith("//") || trimmed.startsWith("/*") || trimmed.startsWith("*");
     }
 
     private int countLeadingClosers(String strippedLine) {

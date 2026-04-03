@@ -248,6 +248,46 @@ class IndentationRuleTest {
                     + "}";
             assertNoViolations(code);
         }
+
+        @Test
+        void badlyIndentedBlockCommentIgnored() {
+            String code = "class T {\n"
+                    + "/* misindented block comment */\n"
+                    + "    int x;\n"
+                    + "}";
+            assertNoViolations(code);
+        }
+
+        @Test
+        void badlyIndentedMultiLineBlockCommentIgnored() {
+            String code = "class T {\n"
+                    + "  /*\n"
+                    + "      * inside block\n"
+                    + "  */\n"
+                    + "    int x;\n"
+                    + "}";
+            assertNoViolations(code);
+        }
+
+        @Test
+        void badlyIndentedLineCommentIgnored() {
+            String code = "class T {\n"
+                    + "// misindented line comment\n"
+                    + "    int x;\n"
+                    + "}";
+            assertNoViolations(code);
+        }
+
+        @Test
+        void badlyIndentedJavadocIgnored() {
+            String code = "class T {\n"
+                    + "/**\n"
+                    + " * Javadoc\n"
+                    + " */\n"
+                    + "    int x;\n"
+                    + "}";
+            assertNoViolations(code);
+        }
     }
 
     @Nested
