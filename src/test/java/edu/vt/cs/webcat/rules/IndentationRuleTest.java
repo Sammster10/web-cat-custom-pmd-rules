@@ -315,4 +315,218 @@ class IndentationRuleTest {
             assertNoViolations(code);
         }
     }
+
+    @Nested
+    class SwitchCaseIndentation {
+        @Test
+        void correctSwitchCaseIndentation() {
+            String code = "class T {\n"
+                    + "    void m(int x) {\n"
+                    + "        switch (x) {\n"
+                    + "            case 1:\n"
+                    + "                int y = 1;\n"
+                    + "                break;\n"
+                    + "            case 2:\n"
+                    + "                int z = 2;\n"
+                    + "                break;\n"
+                    + "            default:\n"
+                    + "                break;\n"
+                    + "        }\n"
+                    + "    }\n"
+                    + "}";
+            assertNoViolations(code);
+        }
+
+        @Test
+        void caseBodyAtSameLevelAsLabel() {
+            String code = "class T {\n"
+                    + "    void m(int x) {\n"
+                    + "        switch (x) {\n"
+                    + "            case 1:\n"
+                    + "            int y = 1;\n"
+                    + "            break;\n"
+                    + "        }\n"
+                    + "    }\n"
+                    + "}";
+            assertHasViolation(code, "indented incorrectly");
+        }
+
+        @Test
+        void defaultLabelBodyIndented() {
+            String code = "class T {\n"
+                    + "    void m(int x) {\n"
+                    + "        switch (x) {\n"
+                    + "            default:\n"
+                    + "                int y = 0;\n"
+                    + "                break;\n"
+                    + "        }\n"
+                    + "    }\n"
+                    + "}";
+            assertNoViolations(code);
+        }
+
+        @Test
+        void multipleCaseLabelsFallThrough() {
+            String code = "class T {\n"
+                    + "    void m(int x) {\n"
+                    + "        switch (x) {\n"
+                    + "            case 1:\n"
+                    + "            case 2:\n"
+                    + "            case 3:\n"
+                    + "                int y = 1;\n"
+                    + "                break;\n"
+                    + "        }\n"
+                    + "    }\n"
+                    + "}";
+            assertNoViolations(code);
+        }
+
+        @Test
+        void arrowCaseNoExtraIndent() {
+            String code = "class T {\n"
+                    + "    void m(int x) {\n"
+                    + "        switch (x) {\n"
+                    + "            case 1 -> System.out.println(1);\n"
+                    + "            case 2 -> System.out.println(2);\n"
+                    + "            default -> System.out.println(0);\n"
+                    + "        }\n"
+                    + "    }\n"
+                    + "}";
+            assertNoViolations(code);
+        }
+
+        @Test
+        void arrowCaseWithBlock() {
+            String code = "class T {\n"
+                    + "    void m(int x) {\n"
+                    + "        switch (x) {\n"
+                    + "            case 1 -> {\n"
+                    + "                System.out.println(1);\n"
+                    + "            }\n"
+                    + "            default -> {\n"
+                    + "                System.out.println(0);\n"
+                    + "            }\n"
+                    + "        }\n"
+                    + "    }\n"
+                    + "}";
+            assertNoViolations(code);
+        }
+
+        @Test
+        void nestedSwitchStatements() {
+            String code = "class T {\n"
+                    + "    void m(int x, int y) {\n"
+                    + "        switch (x) {\n"
+                    + "            case 1:\n"
+                    + "                switch (y) {\n"
+                    + "                    case 10:\n"
+                    + "                        int z = 10;\n"
+                    + "                        break;\n"
+                    + "                    default:\n"
+                    + "                        break;\n"
+                    + "                }\n"
+                    + "                break;\n"
+                    + "            case 2:\n"
+                    + "                break;\n"
+                    + "        }\n"
+                    + "    }\n"
+                    + "}";
+            assertNoViolations(code);
+        }
+
+        @Test
+        void nestedSwitchIncorrectInnerIndent() {
+            String code = "class T {\n"
+                    + "    void m(int x, int y) {\n"
+                    + "        switch (x) {\n"
+                    + "            case 1:\n"
+                    + "                switch (y) {\n"
+                    + "                    case 10:\n"
+                    + "                    int z = 10;\n"
+                    + "                    break;\n"
+                    + "                }\n"
+                    + "                break;\n"
+                    + "        }\n"
+                    + "    }\n"
+                    + "}";
+            assertHasViolation(code, "indented incorrectly");
+        }
+
+        @Test
+        void switchWithCaseContainingBlock() {
+            String code = "class T {\n"
+                    + "    void m(int x) {\n"
+                    + "        switch (x) {\n"
+                    + "            case 1: {\n"
+                    + "                int y = 1;\n"
+                    + "                break;\n"
+                    + "            }\n"
+                    + "            default:\n"
+                    + "                break;\n"
+                    + "        }\n"
+                    + "    }\n"
+                    + "}";
+            assertNoViolations(code);
+        }
+
+        @Test
+        void colonInTernaryNotConfused() {
+            String code = "class T {\n"
+                    + "    void m(int x) {\n"
+                    + "        int y = x > 0 ? 1 : 0;\n"
+                    + "    }\n"
+                    + "}";
+            assertNoViolations(code);
+        }
+
+        @Test
+        void colonInEnhancedForNotConfused() {
+            String code = "class T {\n"
+                    + "    void m(int[] arr) {\n"
+                    + "        for (int x : arr) {\n"
+                    + "            System.out.println(x);\n"
+                    + "        }\n"
+                    + "    }\n"
+                    + "}";
+            assertNoViolations(code);
+        }
+
+        @Test
+        void colonInMethodReferenceNotConfused() {
+            String code = "class T {\n"
+                    + "    void m() {\n"
+                    + "        Runnable r = System.out::println;\n"
+                    + "    }\n"
+                    + "}";
+            assertNoViolations(code);
+        }
+
+        @Test
+        void switchAfterCodeInMethod() {
+            String code = "class T {\n"
+                    + "    void m(int x) {\n"
+                    + "        int a = 1;\n"
+                    + "        switch (x) {\n"
+                    + "            case 1:\n"
+                    + "                break;\n"
+                    + "        }\n"
+                    + "        int b = 2;\n"
+                    + "    }\n"
+                    + "}";
+            assertNoViolations(code);
+        }
+
+        @Test
+        void caseBodyOverIndented() {
+            String code = "class T {\n"
+                    + "    void m(int x) {\n"
+                    + "        switch (x) {\n"
+                    + "            case 1:\n"
+                    + "                    break;\n"
+                    + "        }\n"
+                    + "    }\n"
+                    + "}";
+            assertHasViolation(code, "indented incorrectly");
+        }
+    }
 }

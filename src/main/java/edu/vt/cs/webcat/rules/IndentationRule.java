@@ -8,6 +8,10 @@ import net.sourceforge.pmd.properties.PropertyDescriptor;
 import net.sourceforge.pmd.properties.PropertyFactory;
 import net.sourceforge.pmd.reporting.RuleContext;
 
+import java.util.ArrayDeque;
+import java.util.Deque;
+import java.util.regex.Pattern;
+
 /**
  * A PMD rule that enforces consistent depth-aware indentation using spaces
  * and optionally bans tab characters entirely.
@@ -21,6 +25,14 @@ import net.sourceforge.pmd.reporting.RuleContext;
  * closing delimiters the expected depth is reduced accordingly before the
  * check. Blank lines and lines containing tab characters are skipped for the
  * indentation check.
+ *
+ * <h3>Switch/case indentation</h3>
+ * Traditional {@code case X:} and {@code default:} labels inside a switch
+ * block are recognised and cause an additional indentation level for the
+ * statements that follow the label. Arrow-style cases ({@code case X ->})
+ * do not trigger the extra level because their bodies are already scoped
+ * by braces or are single expressions. Nested switches are fully supported
+ * via a depth-tracking stack.
  *
  * <h3>Tab ban</h3>
  * When {@code banTabs} is enabled (default {@code true}), any line containing
@@ -39,6 +51,12 @@ import net.sourceforge.pmd.reporting.RuleContext;
  * @version 1.0
  */
 public class IndentationRule extends AbstractRule {
+
+    private static final Pattern CASE_LABEL_PATTERN =
+            Pattern.compile("^\\s*(?:case\\s+.+|default\\s*):(?!:)");
+
+    private static final Pattern SWITCH_OPEN_PATTERN =
+            Pattern.compile("\\bswitch\\b.*\\{");
 
     private static final PropertyDescriptor<Integer> INDENT_SIZE =
             PropertyFactory.intProperty("indentSize")
@@ -86,6 +104,10 @@ public class IndentationRule extends AbstractRule {
         int currentDepth = 0;
         boolean insideBlockComment = false;
 
+        Deque<SwitchContext> switchStack = new ArrayDeque<>();
+        int frozenBonus = 0;
+        int activeCaseBonus = 0;
+
         for (int lineIndex = 0; lineIndex < lines.length; lineIndex++) {
             String line = lines[lineIndex];
             int lineNumber = lineIndex + 1;
@@ -106,13 +128,30 @@ public class IndentationRule extends AbstractRule {
 
             String strippedLine = stripLiteralContents(line, insideBlockComment);
             boolean lineIsComment = isCommentLine(line, insideBlockComment);
+            boolean isCaseLabel = !lineIsComment && isCaseLabelLine(strippedLine);
 
             int leadingClosers = countLeadingClosers(strippedLine);
-            int expectedDepth = Math.max(0, currentDepth - leadingClosers);
+            int depthBeforeClosers = Math.max(0, currentDepth - leadingClosers);
+
+            if (leadingClosers > 0) {
+                while (!switchStack.isEmpty()
+                        && depthBeforeClosers < switchStack.peek().braceDepth()) {
+                    SwitchContext restored = switchStack.pop();
+                    frozenBonus = restored.previousFrozenBonus();
+                    activeCaseBonus = restored.previousActiveCaseBonus();
+                }
+            }
+
+            int effectiveExpected;
+            if (isCaseLabel) {
+                effectiveExpected = depthBeforeClosers + frozenBonus;
+            } else {
+                effectiveExpected = depthBeforeClosers + frozenBonus + activeCaseBonus;
+            }
 
             if (!line.isBlank() && !containsTabs(line) && !lineIsComment) {
                 int leadingSpaceCount = countLeadingSpaces(line);
-                int expectedSpaces = expectedDepth * indentSize;
+                int expectedSpaces = effectiveExpected * indentSize;
 
                 if (leadingSpaceCount != expectedSpaces) {
                     int reportLine = document.lineColumnAtOffset(offset).getLine();
@@ -128,12 +167,42 @@ public class IndentationRule extends AbstractRule {
                 }
             }
 
+            if (isCaseLabel && !isArrowCase(strippedLine)) {
+                DepthDelta caseDelta = computeDepthDelta(strippedLine);
+                activeCaseBonus = caseDelta.netChange() <= 0 ? 1 : 0;
+            }
+
+            if (!lineIsComment && SWITCH_OPEN_PATTERN.matcher(strippedLine).find()) {
+                DepthDelta preSwitchDelta = computeDepthDelta(strippedLine);
+                int switchBraceDepth = currentDepth + preSwitchDelta.netChange();
+                switchStack.push(new SwitchContext(switchBraceDepth, frozenBonus, activeCaseBonus));
+                frozenBonus = frozenBonus + activeCaseBonus;
+                activeCaseBonus = 0;
+            }
+
             DepthDelta delta = computeDepthDelta(strippedLine);
-            currentDepth = Math.max(0, currentDepth + delta.netChange());
+            int newDepth = Math.max(0, currentDepth + delta.netChange());
+
+            while (!switchStack.isEmpty() && newDepth <= switchStack.peek().braceDepth() - 1) {
+                SwitchContext restored = switchStack.pop();
+                frozenBonus = restored.previousFrozenBonus();
+                activeCaseBonus = restored.previousActiveCaseBonus();
+            }
+
+            currentDepth = newDepth;
             insideBlockComment = delta.endsInsideBlockComment();
 
             offset += line.length() + 1;
         }
+    }
+
+    private boolean isCaseLabelLine(String strippedLine) {
+        return CASE_LABEL_PATTERN.matcher(strippedLine).find();
+    }
+
+    private boolean isArrowCase(String strippedLine) {
+        String trimmed = strippedLine.stripLeading();
+        return trimmed.matches("\\s*(?:case\\s+.+|default\\s*)\\s*->.*");
     }
 
     private boolean isCommentLine(String line, boolean insideBlockComment) {
@@ -285,6 +354,9 @@ public class IndentationRule extends AbstractRule {
     }
 
     private record DepthDelta(int netChange, boolean endsInsideBlockComment) {
+    }
+
+    private record SwitchContext(int braceDepth, int previousFrozenBonus, int previousActiveCaseBonus) {
     }
 }
 
