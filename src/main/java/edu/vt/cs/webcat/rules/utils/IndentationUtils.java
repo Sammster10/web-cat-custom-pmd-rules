@@ -1,28 +1,28 @@
-package edu.vt.cs.webcat.rules;
+package edu.vt.cs.webcat.rules.utils;
 
 import java.util.regex.Pattern;
 
-final class IndentationUtils {
+public final class IndentationUtils {
 
-    static final Pattern CASE_LABEL_PATTERN =
+    public static final Pattern CASE_LABEL_PATTERN =
             Pattern.compile("^\\s*(?:case\\s+.+|default\\s*):(?!:)");
 
-    static final Pattern SWITCH_OPEN_PATTERN =
+    public static final Pattern SWITCH_OPEN_PATTERN =
             Pattern.compile("\\bswitch\\b.*\\{");
 
     private IndentationUtils() {
     }
 
-    static boolean isCaseLabelLine(String strippedLine) {
+    public static boolean isCaseLabelLine(String strippedLine) {
         return CASE_LABEL_PATTERN.matcher(strippedLine).find();
     }
 
-    static boolean isArrowCase(String strippedLine) {
+    public static boolean isArrowCase(String strippedLine) {
         String trimmed = strippedLine.stripLeading();
         return trimmed.matches("\\s*(?:case\\s+.+|default\\s*)\\s*->.*");
     }
 
-    static boolean isCommentLine(String line, boolean insideBlockComment) {
+    public static boolean isCommentLine(String line, boolean insideBlockComment) {
         if (insideBlockComment) {
             return true;
         }
@@ -30,7 +30,7 @@ final class IndentationUtils {
         return trimmed.startsWith("//") || trimmed.startsWith("/*") || trimmed.startsWith("*");
     }
 
-    static int countLeadingClosers(String strippedLine) {
+    public static int countLeadingClosers(String strippedLine) {
         String trimmed = strippedLine.stripLeading();
         int count = 0;
         for (int index = 0; index < trimmed.length(); index++) {
@@ -44,7 +44,7 @@ final class IndentationUtils {
         return count;
     }
 
-    static DepthDelta computeDepthDelta(String strippedLine) {
+    public static DepthDelta computeDepthDelta(String strippedLine) {
         int netChange = 0;
         boolean insideLineComment = false;
         boolean insideBlockComment = false;
@@ -87,11 +87,11 @@ final class IndentationUtils {
         return new DepthDelta(netChange, insideBlockComment);
     }
 
-    static boolean containsTabs(String line) {
+    public static boolean containsTabs(String line) {
         return line.indexOf('\t') >= 0;
     }
 
-    static int countLeadingSpaces(String line) {
+    public static int countLeadingSpaces(String line) {
         int count = 0;
         while (count < line.length() && line.charAt(count) == ' ') {
             count++;
@@ -99,7 +99,7 @@ final class IndentationUtils {
         return count;
     }
 
-    static String stripLiteralContents(String line, boolean startInsideBlockComment) {
+    public static String stripLiteralContents(String line, boolean startInsideBlockComment) {
         StringBuilder result = new StringBuilder(line.length());
         boolean insideString = false;
         boolean insideChar = false;
@@ -170,10 +170,10 @@ final class IndentationUtils {
         return result.toString();
     }
 
-    record DepthDelta(int netChange, boolean endsInsideBlockComment) {
+    public record DepthDelta(int netChange, boolean endsInsideBlockComment) {
     }
 
-    record SwitchContext(int braceDepth, int previousFrozenBonus, int previousActiveCaseBonus) {
+    public record SwitchContext(int braceDepth, int previousFrozenBonus, int previousActiveCaseBonus) {
     }
 }
 

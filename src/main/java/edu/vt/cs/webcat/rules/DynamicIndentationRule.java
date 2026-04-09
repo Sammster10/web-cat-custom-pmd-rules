@@ -1,5 +1,6 @@
 package edu.vt.cs.webcat.rules;
 
+import edu.vt.cs.webcat.rules.utils.IndentationUtils;
 import net.sourceforge.pmd.lang.ast.Node;
 import net.sourceforge.pmd.lang.document.Chars;
 import net.sourceforge.pmd.lang.document.TextDocument;
