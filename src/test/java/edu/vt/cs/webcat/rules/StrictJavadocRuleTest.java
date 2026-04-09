@@ -7,6 +7,7 @@ import net.sourceforge.pmd.lang.document.TextFile;
 import net.sourceforge.pmd.lang.java.JavaLanguageModule;
 import net.sourceforge.pmd.lang.rule.Rule;
 import net.sourceforge.pmd.lang.rule.RuleSet;
+import net.sourceforge.pmd.properties.PropertyDescriptor;
 import net.sourceforge.pmd.reporting.Report;
 import net.sourceforge.pmd.reporting.RuleViolation;
 import org.junit.jupiter.api.BeforeEach;
@@ -21,6 +22,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class StrictJavadocRuleTest {
 
     private Rule rule;
+
+    @SuppressWarnings("unchecked")
+    private static <T> void setRuleProperty(Rule rule, String name, T value) {
+        PropertyDescriptor<T> descriptor = (PropertyDescriptor<T>) rule.getPropertyDescriptor(name);
+        rule.setProperty(descriptor, value);
+    }
 
     @BeforeEach
     void setUp() {
@@ -567,5 +574,79 @@ class StrictJavadocRuleTest {
             assertHasViolation(code, "must declare @author");
         }
     }
-}
 
+    @Nested
+    class AllowedDuplicateTags {
+        @Test
+        void duplicateAuthorAllowedWhenConfigured() {
+            setRuleProperty(rule, "allowedDuplicateTags", List.of("author"));
+            String code = """
+                    /**
+                     * A class.
+                     * @author John
+                     * @author Jane
+                     * @version 1.0
+                     */
+                    class T { }""";
+            assertNoViolations(code);
+        }
+
+        @Test
+        void duplicateAuthorForbiddenByDefault() {
+            String code = """
+                    /**
+                     * A class.
+                     * @author John
+                     * @author Jane
+                     * @version 1.0
+                     */
+                    class T { }""";
+            assertHasViolation(code, "duplicate @author");
+        }
+
+        @Test
+        void duplicateVersionAllowedWhenConfigured() {
+            setRuleProperty(rule, "allowedDuplicateTags", List.of("version"));
+            String code = """
+                    /**
+                     * A class.
+                     * @author John
+                     * @version 1.0
+                     * @version 2.0
+                     */
+                    class T { }""";
+            assertNoViolations(code);
+        }
+
+        @Test
+        void duplicateReturnAllowedWhenConfigured() {
+            setRuleProperty(rule, "allowedDuplicateTags", List.of("return"));
+            String code = wrapInClass(
+                    "    /**\n     * Gets value.\n     * @return first\n     * @return second\n     */\n    int getValue() { return 0; }");
+            assertNoViolations(code);
+        }
+
+        @Test
+        void duplicateParamAllowedWhenConfigured() {
+            setRuleProperty(rule, "allowedDuplicateTags", List.of("param"));
+            String code = wrapInClass(
+                    "    /**\n     * Sets value.\n     * @param x first\n     * @param x second\n     */\n    void set(int x) { }");
+            assertNoViolations(code);
+        }
+
+        @Test
+        void multipleTagsAllowed() {
+            setRuleProperty(rule, "allowedDuplicateTags", List.of("author", "version"));
+            String code = """
+                    /**
+                     * A class.
+                     * @author John
+                     * @author Jane
+                     * @version 1.0
+                     * @version 2.0
+                     */
+                    class T { }""";
+            assertNoViolations(code);
+        }
+    }
+}

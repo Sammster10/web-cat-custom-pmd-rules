@@ -10,10 +10,7 @@ import net.sourceforge.pmd.properties.PropertyFactory;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.StringReader;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 /**
  * A PMD rule that enforces strict Javadoc documentation standards on all non-private
@@ -182,6 +179,12 @@ public class StrictJavadocRule extends AbstractJavaRulechainRule {
                     .defaultValue("Non-private field(s) {0} must have Javadoc.")
                     .build();
 
+    private static final PropertyDescriptor<List<String>> ALLOWED_DUPLICATE_TAGS =
+            PropertyFactory.stringListProperty("allowedDuplicateTags")
+                    .desc("Tag names that are allowed to appear more than once (e.g. author, version, param, return).")
+                    .defaultValue(Collections.emptyList())
+                    .build();
+
     public StrictJavadocRule() {
         super(
                 ASTMethodDeclaration.class,
@@ -215,6 +218,7 @@ public class StrictJavadocRule extends AbstractJavaRulechainRule {
         definePropertyDescriptor(DUPLICATE_VERSION_MESSAGE);
         definePropertyDescriptor(EMPTY_VERSION_MESSAGE);
         definePropertyDescriptor(MISSING_FIELD_JAVADOC_MESSAGE);
+        definePropertyDescriptor(ALLOWED_DUPLICATE_TAGS);
     }
 
     @Override
@@ -429,7 +433,7 @@ public class StrictJavadocRule extends AbstractJavaRulechainRule {
         }
 
         if (isTypeParameterTag(tag.subject())) {
-            if (!seenTypeParameters.add(tag.subject())) {
+            if (!seenTypeParameters.add(tag.subject()) && !isDuplicateAllowed("param")) {
                 addViolation(
                         data,
                         node,
@@ -449,7 +453,7 @@ public class StrictJavadocRule extends AbstractJavaRulechainRule {
                 );
             }
         } else {
-            if (!seenParameters.add(tag.subject())) {
+            if (!seenParameters.add(tag.subject()) && !isDuplicateAllowed("param")) {
                 addViolation(
                         data,
                         node,
@@ -479,7 +483,7 @@ public class StrictJavadocRule extends AbstractJavaRulechainRule {
             int returnTagCount,
             boolean requiresReturnTag
     ) {
-        if (returnTagCount > 1) {
+        if (returnTagCount > 1 && !isDuplicateAllowed("return")) {
             addViolation(
                     data,
                     node,
@@ -611,7 +615,7 @@ public class StrictJavadocRule extends AbstractJavaRulechainRule {
                     quoted(name),
                     quoted(tag.subject())
             );
-        } else if (!seenTypeParameters.add(tag.subject())) {
+        } else if (!seenTypeParameters.add(tag.subject()) && !isDuplicateAllowed("param")) {
             addViolation(
                     data,
                     node,
@@ -649,7 +653,7 @@ public class StrictJavadocRule extends AbstractJavaRulechainRule {
                     quoted(name)
             );
         } else {
-            if (authorCount > 1) {
+            if (authorCount > 1 && !isDuplicateAllowed("author")) {
                 addViolation(
                         data,
                         node,
@@ -687,7 +691,7 @@ public class StrictJavadocRule extends AbstractJavaRulechainRule {
                     quoted(name)
             );
         } else {
-            if (versionCount > 1) {
+            if (versionCount > 1 && !isDuplicateAllowed("version")) {
                 addViolation(
                         data,
                         node,
@@ -874,6 +878,10 @@ public class StrictJavadocRule extends AbstractJavaRulechainRule {
 
     private String quoted(String text) {
         return String.format("'%s'", text);
+    }
+
+    private boolean isDuplicateAllowed(String tagName) {
+        return getProperty(ALLOWED_DUPLICATE_TAGS).contains(tagName);
     }
 
     private void addViolation(Object data, Object node, String message, Object... args) {
