@@ -79,33 +79,43 @@ class CovariantEqualsRuleTest {
     class NoViolations {
         @Test
         void properEqualsOverride() {
-            assertNoViolations(
-                    "class T {\n    public boolean equals(Object o) { return false; }\n}");
+            assertNoViolations("""
+                    class T {
+                        public boolean equals(Object o) { return false; }
+                    }""");
         }
 
         @Test
         void covariantEqualsWithProperOverride() {
-            assertNoViolations(
-                    "class T {\n"
-                            + "    public boolean equals(T other) { return false; }\n"
-                            + "    public boolean equals(Object o) { return false; }\n"
-                            + "}");
+            assertNoViolations("""
+                    class T {
+                        public boolean equals(T other) { return false; }
+                        public boolean equals(Object o) { return false; }
+                    }""");
         }
 
         @Test
         void noEqualsMethod() {
-            assertNoViolations("class T {\n    void doStuff() { }\n}");
+            assertNoViolations("""
+                    class T {
+                        void doStuff() { }
+                    }""");
         }
 
         @Test
         void equalsWithNoParameters() {
-            assertNoViolations("class T {\n    public boolean equals() { return false; }\n}");
+            assertNoViolations("""
+                    class T {
+                        public boolean equals() { return false; }
+                    }""");
         }
 
         @Test
         void equalsWithTwoParameters() {
-            assertNoViolations(
-                    "class T {\n    public boolean equals(T a, T b) { return false; }\n}");
+            assertNoViolations("""
+                    class T {
+                        public boolean equals(T a, T b) { return false; }
+                    }""");
         }
 
         @Test
@@ -115,8 +125,10 @@ class CovariantEqualsRuleTest {
 
         @Test
         void fullyQualifiedObjectParameter() {
-            assertNoViolations(
-                    "class T {\n    public boolean equals(java.lang.Object o) { return false; }\n}");
+            assertNoViolations("""
+                    class T {
+                        public boolean equals(java.lang.Object o) { return false; }
+                    }""");
         }
     }
 
@@ -124,29 +136,38 @@ class CovariantEqualsRuleTest {
     class Violations {
         @Test
         void covariantEqualsOnly() {
-            assertHasViolation(
-                    "class T {\n    public boolean equals(T other) { return false; }\n}",
+            assertHasViolation("""
+                            class T {
+                                public boolean equals(T other) { return false; }
+                            }""",
                     "defines equals(T)");
         }
 
         @Test
         void covariantEqualsWithStringParam() {
-            assertHasViolation(
-                    "class T {\n    public boolean equals(String other) { return false; }\n}",
+            assertHasViolation("""
+                            class T {
+                                public boolean equals(String other) { return false; }
+                            }""",
                     "defines equals(String)");
         }
 
         @Test
         void covariantEqualsInEnum() {
-            assertHasViolation(
-                    "enum E {\n    A, B;\n    public boolean equals(E other) { return false; }\n}",
+            assertHasViolation("""
+                            enum E {
+                                A, B;
+                                public boolean equals(E other) { return false; }
+                            }""",
                     "defines equals(E)");
         }
 
         @Test
         void covariantEqualsReportsOnlyOne() {
-            assertViolationCount(
-                    "class T {\n    public boolean equals(T other) { return false; }\n}", 1);
+            assertViolationCount("""
+                    class T {
+                        public boolean equals(T other) { return false; }
+                    }""", 1);
         }
     }
 
@@ -155,10 +176,11 @@ class CovariantEqualsRuleTest {
         @Test
         void customMessage() {
             setRuleProperty(rule, "violationMessage", "Bad equals in {0} with param {1}");
-            assertHasViolation(
-                    "class T {\n    public boolean equals(T other) { return false; }\n}",
+            assertHasViolation("""
+                            class T {
+                                public boolean equals(T other) { return false; }
+                            }""",
                     "Bad equals in T with param T");
         }
     }
 }
-

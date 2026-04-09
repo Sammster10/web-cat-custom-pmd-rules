@@ -79,26 +79,37 @@ class HiddenFieldRuleTest {
     class NoViolations {
         @Test
         void parameterDoesNotMatchField() {
-            assertNoViolations(
-                    "class T {\n    private int count;\n    void m(int other) { }\n}");
+            assertNoViolations("""
+                    class T {
+                        private int count;
+                        void m(int other) { }
+                    }""");
         }
 
         @Test
         void localVariableDoesNotMatchField() {
-            assertNoViolations(
-                    "class T {\n    private String name;\n    void m() { int x = 0; }\n}");
+            assertNoViolations("""
+                    class T {
+                        private String name;
+                        void m() { int x = 0; }
+                    }""");
         }
 
         @Test
         void noFieldsInClass() {
-            assertNoViolations(
-                    "class T {\n    void m(int x) { int y = 0; }\n}");
+            assertNoViolations("""
+                    class T {
+                        void m(int x) { int y = 0; }
+                    }""");
         }
 
         @Test
         void emptyMethodBody() {
-            assertNoViolations(
-                    "class T {\n    private int x;\n    void m() { }\n}");
+            assertNoViolations("""
+                    class T {
+                        private int x;
+                        void m() { }
+                    }""");
         }
     }
 
@@ -106,23 +117,32 @@ class HiddenFieldRuleTest {
     class ConstructorExclusion {
         @Test
         void constructorExcludedByDefault() {
-            assertNoViolations(
-                    "class T {\n    private int x;\n    T(int x) { this.x = x; }\n}");
+            assertNoViolations("""
+                    class T {
+                        private int x;
+                        T(int x) { this.x = x; }
+                    }""");
         }
 
         @Test
         void constructorCheckedWhenEnabled() {
             setRuleProperty(rule, "checkConstructors", true);
-            assertHasViolation(
-                    "class T {\n    private int x;\n    T(int x) { this.x = x; }\n}",
+            assertHasViolation("""
+                            class T {
+                                private int x;
+                                T(int x) { this.x = x; }
+                            }""",
                     "Parameter");
         }
 
         @Test
         void constructorLocalVariableCheckedWhenEnabled() {
             setRuleProperty(rule, "checkConstructors", true);
-            assertHasViolation(
-                    "class T {\n    private int x;\n    T() { int x = 5; this.x = x; }\n}",
+            assertHasViolation("""
+                            class T {
+                                private int x;
+                                T() { int x = 5; this.x = x; }
+                            }""",
                     "Local variable");
         }
     }
@@ -131,36 +151,51 @@ class HiddenFieldRuleTest {
     class SetterExclusion {
         @Test
         void setterExcludedByDefault() {
-            assertNoViolations(
-                    "class T {\n    private int count;\n    void setCount(int count) { this.count = count; }\n}");
+            assertNoViolations("""
+                    class T {
+                        private int count;
+                        void setCount(int count) { this.count = count; }
+                    }""");
         }
 
         @Test
         void setterCheckedWhenEnabled() {
             setRuleProperty(rule, "checkSetters", true);
-            assertHasViolation(
-                    "class T {\n    private int count;\n    void setCount(int count) { this.count = count; }\n}",
+            assertHasViolation("""
+                            class T {
+                                private int count;
+                                void setCount(int count) { this.count = count; }
+                            }""",
                     "Parameter");
         }
 
         @Test
         void methodNamedSetButNotASetter() {
-            assertHasViolation(
-                    "class T {\n    private int x;\n    int setup(int x) { return x; }\n}",
+            assertHasViolation("""
+                            class T {
+                                private int x;
+                                int setup(int x) { return x; }
+                            }""",
                     "Parameter");
         }
 
         @Test
         void setterWithTwoParamsNotExcluded() {
-            assertHasViolation(
-                    "class T {\n    private int x;\n    void setX(int x, int y) { this.x = x; }\n}",
+            assertHasViolation("""
+                            class T {
+                                private int x;
+                                void setX(int x, int y) { this.x = x; }
+                            }""",
                     "Parameter");
         }
 
         @Test
         void setterWithReturnTypeNotExcluded() {
-            assertHasViolation(
-                    "class T {\n    private int x;\n    int setX(int x) { this.x = x; return x; }\n}",
+            assertHasViolation("""
+                            class T {
+                                private int x;
+                                int setX(int x) { this.x = x; return x; }
+                            }""",
                     "Parameter");
         }
     }
@@ -169,15 +204,21 @@ class HiddenFieldRuleTest {
     class AbstractMethodExclusion {
         @Test
         void abstractMethodExcludedByDefault() {
-            assertNoViolations(
-                    "abstract class T {\n    private int x;\n    abstract void m(int x);\n}");
+            assertNoViolations("""
+                    abstract class T {
+                        private int x;
+                        abstract void m(int x);
+                    }""");
         }
 
         @Test
         void abstractMethodCheckedWhenEnabled() {
             setRuleProperty(rule, "checkAbstractMethods", true);
-            assertHasViolation(
-                    "abstract class T {\n    private int x;\n    abstract void m(int x);\n}",
+            assertHasViolation("""
+                            abstract class T {
+                                private int x;
+                                abstract void m(int x);
+                            }""",
                     "Parameter");
         }
     }
@@ -186,21 +227,32 @@ class HiddenFieldRuleTest {
     class ParameterShadowing {
         @Test
         void singleParameterMatchesField() {
-            assertHasViolation(
-                    "class T {\n    private int x;\n    void m(int x) { }\n}",
+            assertHasViolation("""
+                            class T {
+                                private int x;
+                                void m(int x) { }
+                            }""",
                     "Parameter");
         }
 
         @Test
         void multipleParametersOneMatches() {
-            assertViolationCount(
-                    "class T {\n    private int x;\n    private int y;\n    void m(int x, int z) { }\n}", 1);
+            assertViolationCount("""
+                    class T {
+                        private int x;
+                        private int y;
+                        void m(int x, int z) { }
+                    }""", 1);
         }
 
         @Test
         void multipleParametersAllMatch() {
-            assertViolationCount(
-                    "class T {\n    private int x;\n    private int y;\n    void m(int x, int y) { }\n}", 2);
+            assertViolationCount("""
+                    class T {
+                        private int x;
+                        private int y;
+                        void m(int x, int y) { }
+                    }""", 2);
         }
     }
 
@@ -208,22 +260,35 @@ class HiddenFieldRuleTest {
     class LocalVariableShadowing {
         @Test
         void localVariableMatchesField() {
-            assertHasViolation(
-                    "class T {\n    private int x;\n    void m() { int x = 0; }\n}",
+            assertHasViolation("""
+                            class T {
+                                private int x;
+                                void m() { int x = 0; }
+                            }""",
                     "Local variable");
         }
 
         @Test
         void nestedBlockLocalVariable() {
-            assertHasViolation(
-                    "class T {\n    private int x;\n    void m() {\n        if (true) { int x = 1; }\n    }\n}",
+            assertHasViolation("""
+                            class T {
+                                private int x;
+                                void m() {
+                                    if (true) { int x = 1; }
+                                }
+                            }""",
                     "Local variable");
         }
 
         @Test
         void forLoopVariable() {
-            assertHasViolation(
-                    "class T {\n    private int i;\n    void m() {\n        for (int i = 0; i < 10; i++) { }\n    }\n}",
+            assertHasViolation("""
+                            class T {
+                                private int i;
+                                void m() {
+                                    for (int i = 0; i < 10; i++) { }
+                                }
+                            }""",
                     "Local variable");
         }
     }
@@ -232,27 +297,41 @@ class HiddenFieldRuleTest {
     class MixedViolations {
         @Test
         void parameterAndLocalVariableBothMatch() {
-            assertViolationCount(
-                    "class T {\n    private int x;\n    private int y;\n    void m(int x) { int y = 0; }\n}", 2);
+            assertViolationCount("""
+                    class T {
+                        private int x;
+                        private int y;
+                        void m(int x) { int y = 0; }
+                    }""", 2);
         }
 
         @Test
         void multipleMethods() {
-            assertViolationCount(
-                    "class T {\n    private int x;\n    void a(int x) { }\n    void b(int x) { }\n}", 2);
+            assertViolationCount("""
+                    class T {
+                        private int x;
+                        void a(int x) { }
+                        void b(int x) { }
+                    }""", 2);
         }
 
         @Test
         void publicFieldShadowed() {
-            assertHasViolation(
-                    "class T {\n    public int x;\n    void m(int x) { }\n}",
+            assertHasViolation("""
+                            class T {
+                                public int x;
+                                void m(int x) { }
+                            }""",
                     "Parameter");
         }
 
         @Test
         void staticFieldShadowed() {
-            assertHasViolation(
-                    "class T {\n    static int x;\n    void m(int x) { }\n}",
+            assertHasViolation("""
+                            class T {
+                                static int x;
+                                void m(int x) { }
+                            }""",
                     "Parameter");
         }
     }
@@ -262,16 +341,22 @@ class HiddenFieldRuleTest {
         @Test
         void customParameterMessage() {
             setRuleProperty(rule, "parameterMessage", "Param {0} shadows field");
-            assertHasViolation(
-                    "class T {\n    private int x;\n    void m(int x) { }\n}",
+            assertHasViolation("""
+                            class T {
+                                private int x;
+                                void m(int x) { }
+                            }""",
                     "Param x shadows field");
         }
 
         @Test
         void customLocalVariableMessage() {
             setRuleProperty(rule, "localVariableMessage", "Local {0} shadows field");
-            assertHasViolation(
-                    "class T {\n    private int x;\n    void m() { int x = 0; }\n}",
+            assertHasViolation("""
+                            class T {
+                                private int x;
+                                void m() { int x = 0; }
+                            }""",
                     "Local x shadows field");
         }
     }

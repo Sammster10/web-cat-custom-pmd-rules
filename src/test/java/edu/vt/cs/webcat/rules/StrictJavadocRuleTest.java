@@ -68,8 +68,13 @@ class StrictJavadocRuleTest {
                         expected, violations.size(), violations));
     }
 
-    private static final String VALID_CLASS_JAVADOC =
-            "/**\n * A class.\n * @author John\n * @version 1.0\n */\n";
+    private static final String VALID_CLASS_JAVADOC = """
+            /**
+             * A class.
+             * @author John
+             * @version 1.0
+             */
+            """;
 
     private String wrapInClass(String body) {
         return VALID_CLASS_JAVADOC + "class T {\n" + body + "\n}";
@@ -79,7 +84,13 @@ class StrictJavadocRuleTest {
     class TypeDeclarations {
         @Test
         void validClassJavadoc() {
-            String code = "/**\n * A class.\n * @author John\n * @version 1.0\n */\nclass T { }";
+            String code = """
+                    /**
+                     * A class.
+                     * @author John
+                     * @version 1.0
+                     */
+                    class T { }""";
             assertNoViolations(code);
         }
 
@@ -90,82 +101,157 @@ class StrictJavadocRuleTest {
 
         @Test
         void missingAuthorTag() {
-            String code = "/**\n * A class.\n * @version 1.0\n */\nclass T { }";
+            String code = """
+                    /**
+                     * A class.
+                     * @version 1.0
+                     */
+                    class T { }""";
             assertHasViolation(code, "must declare @author");
         }
 
         @Test
         void missingVersionTag() {
-            String code = "/**\n * A class.\n * @author John\n */\nclass T { }";
+            String code = """
+                    /**
+                     * A class.
+                     * @author John
+                     */
+                    class T { }""";
             assertHasViolation(code, "must declare @version");
         }
 
         @Test
         void duplicateAuthorTag() {
-            String code = "/**\n * A class.\n * @author John\n * @author Jane\n * @version 1.0\n */\nclass T { }";
+            String code = """
+                    /**
+                     * A class.
+                     * @author John
+                     * @author Jane
+                     * @version 1.0
+                     */
+                    class T { }""";
             assertHasViolation(code, "duplicate @author");
         }
 
         @Test
         void duplicateVersionTag() {
-            String code = "/**\n * A class.\n * @author John\n * @version 1.0\n * @version 2.0\n */\nclass T { }";
+            String code = """
+                    /**
+                     * A class.
+                     * @author John
+                     * @version 1.0
+                     * @version 2.0
+                     */
+                    class T { }""";
             assertHasViolation(code, "duplicate @version");
         }
 
         @Test
         void emptyAuthorTag() {
-            String code = "/**\n * A class.\n * @author\n * @version 1.0\n */\nclass T { }";
+            String code = """
+                    /**
+                     * A class.
+                     * @author
+                     * @version 1.0
+                     */
+                    class T { }""";
             assertHasViolation(code, "empty @author");
         }
 
         @Test
         void emptyVersionTag() {
-            String code = "/**\n * A class.\n * @author John\n * @version\n */\nclass T { }";
+            String code = """
+                    /**
+                     * A class.
+                     * @author John
+                     * @version
+                     */
+                    class T { }""";
             assertHasViolation(code, "empty @version");
         }
 
         @Test
         void returnTagOnClassForbidden() {
-            String code = "/**\n * A class.\n * @author John\n * @version 1.0\n * @return nothing\n */\nclass T { }";
+            String code = """
+                    /**
+                     * A class.
+                     * @author John
+                     * @version 1.0
+                     * @return nothing
+                     */
+                    class T { }""";
             assertHasViolation(code, "unused @return");
         }
 
         @Test
         void throwsTagOnClassForbidden() {
-            String code = "/**\n * A class.\n * @author John\n * @version 1.0\n * @throws Exception\n */\nclass T { }";
+            String code = """
+                    /**
+                     * A class.
+                     * @author John
+                     * @version 1.0
+                     * @throws Exception
+                     */
+                    class T { }""";
             assertHasViolation(code, "unused @throws");
         }
 
         @Test
         void validEnumJavadoc() {
-            String code = "/**\n * An enum.\n * @author John\n * @version 1.0\n */\nenum Color { RED }";
+            String code = """
+                    /**
+                     * An enum.
+                     * @author John
+                     * @version 1.0
+                     */
+                    enum Color { RED }""";
             assertNoViolations(code);
         }
 
         @Test
         void validInterfaceJavadoc() {
-            String code = "/**\n * An interface.\n * @author John\n * @version 1.0\n */\ninterface I { }";
+            String code = """
+                    /**
+                     * An interface.
+                     * @author John
+                     * @version 1.0
+                     */
+                    interface I { }""";
             assertNoViolations(code);
         }
 
         @Test
         void validAnnotationJavadoc() {
-            String code = "/**\n * An annotation.\n * @author John\n * @version 1.0\n */\n@interface A { }";
+            String code = """
+                    /**
+                     * An annotation.
+                     * @author John
+                     * @version 1.0
+                     */
+                    @interface A { }""";
             assertNoViolations(code);
         }
 
         @Test
         void validRecordJavadoc() {
-            String code = "/**\n * A record.\n * @author John\n * @version 1.0\n */\nrecord R() { }";
+            String code = """
+                    /**
+                     * A record.
+                     * @author John
+                     * @version 1.0
+                     */
+                    record R() { }""";
             assertNoViolations(code);
         }
 
         @Test
         void privateClassNotChecked() {
             String code = VALID_CLASS_JAVADOC
-                    + "class Outer {\n"
-                    + "    private class Inner { }\n"
-                    + "}";
+                    + """
+                    class Outer {
+                        private class Inner { }
+                    }""";
             assertNoViolations(code);
         }
     }
@@ -174,31 +260,66 @@ class StrictJavadocRuleTest {
     class TypeParameters {
         @Test
         void validGenericClassParam() {
-            String code = "/**\n * A class.\n * @param <T> the type\n * @author John\n * @version 1.0\n */\nclass Box<T> { }";
+            String code = """
+                    /**
+                     * A class.
+                     * @param <T> the type
+                     * @author John
+                     * @version 1.0
+                     */
+                    class Box<T> { }""";
             assertNoViolations(code);
         }
 
         @Test
         void missingGenericClassParam() {
-            String code = "/**\n * A class.\n * @author John\n * @version 1.0\n */\nclass Box<T> { }";
+            String code = """
+                    /**
+                     * A class.
+                     * @author John
+                     * @version 1.0
+                     */
+                    class Box<T> { }""";
             assertHasViolation(code, "missing @param for type parameter");
         }
 
         @Test
         void duplicateTypeParam() {
-            String code = "/**\n * A class.\n * @param <T> first\n * @param <T> second\n * @author John\n * @version 1.0\n */\nclass Box<T> { }";
+            String code = """
+                    /**
+                     * A class.
+                     * @param <T> first
+                     * @param <T> second
+                     * @author John
+                     * @version 1.0
+                     */
+                    class Box<T> { }""";
             assertHasViolation(code, "duplicate @param for type parameter");
         }
 
         @Test
         void unknownTypeParam() {
-            String code = "/**\n * A class.\n * @param <X> unknown\n * @author John\n * @version 1.0\n */\nclass T { }";
+            String code = """
+                    /**
+                     * A class.
+                     * @param <X> unknown
+                     * @author John
+                     * @version 1.0
+                     */
+                    class T { }""";
             assertHasViolation(code, "unknown type parameter");
         }
 
         @Test
         void invalidParamTargetOnType() {
-            String code = "/**\n * A class.\n * @param notAType desc\n * @author John\n * @version 1.0\n */\nclass T { }";
+            String code = """
+                    /**
+                     * A class.
+                     * @param notAType desc
+                     * @author John
+                     * @version 1.0
+                     */
+                    class T { }""";
             assertHasViolation(code, "invalid @param target");
         }
     }
@@ -391,23 +512,38 @@ class StrictJavadocRuleTest {
     class CompactRecordConstructor {
         @Test
         void validCompactConstructor() {
-            String code = "/**\n * A record.\n * @author John\n * @version 1.0\n */\n"
-                    + "record R(int x) {\n"
-                    + "    /**\n     * Creates R.\n     * @param x the value\n     */\n"
-                    + "    R {\n"
-                    + "    }\n"
-                    + "}";
+            String code = """
+                    /**
+                     * A record.
+                     * @author John
+                     * @version 1.0
+                     */
+                    record R(int x) {
+                        /**
+                         * Creates R.
+                         * @param x the value
+                         */
+                        R {
+                        }
+                    }""";
             assertNoViolations(code);
         }
 
         @Test
         void missingCompactConstructorParam() {
-            String code = "/**\n * A record.\n * @author John\n * @version 1.0\n */\n"
-                    + "record R(int x) {\n"
-                    + "    /**\n     * Creates R.\n     */\n"
-                    + "    R {\n"
-                    + "    }\n"
-                    + "}";
+            String code = """
+                    /**
+                     * A record.
+                     * @author John
+                     * @version 1.0
+                     */
+                    record R(int x) {
+                        /**
+                         * Creates R.
+                         */
+                        R {
+                        }
+                    }""";
             assertHasViolation(code, "missing @param");
         }
     }
@@ -424,7 +560,10 @@ class StrictJavadocRuleTest {
 
         @Test
         void emptyJavadocStillNeedsTags() {
-            String code = "/**\n */\nclass T { }";
+            String code = """
+                    /**
+                     */
+                    class T { }""";
             assertHasViolation(code, "must declare @author");
         }
     }

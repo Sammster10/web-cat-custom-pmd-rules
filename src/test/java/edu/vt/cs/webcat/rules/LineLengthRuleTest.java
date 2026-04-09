@@ -123,6 +123,7 @@ class LineLengthRuleTest {
             assertViolationCount(code, 1);
         }
 
+
         @Test
         void allShortLines() {
             String code = "class T {\n    int x = 1;\n    int y = 2;\n}";
