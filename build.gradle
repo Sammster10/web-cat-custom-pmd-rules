@@ -5,6 +5,12 @@ plugins {
 group = 'edu.vt.cs.webcat'
 version = '1.0-SNAPSHOT'
 
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(11)
+    }
+}
+
 repositories {
     mavenCentral()
 }
@@ -20,6 +26,8 @@ dependencies {
 
 test {
     useJUnitPlatform()
+
+
     testLogging {
         events "passed", "failed"
         showExceptions true
@@ -38,6 +46,6 @@ sourceSets {
 }
 
 tasks.withType(JavaCompile).configureEach {
+    options.release = 11
     options.compilerArgs += ['-Xdiags:verbose']
 }
-

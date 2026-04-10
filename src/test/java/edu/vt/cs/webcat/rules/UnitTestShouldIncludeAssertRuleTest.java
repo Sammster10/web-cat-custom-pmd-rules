@@ -70,75 +70,69 @@ class UnitTestShouldIncludeAssertRuleTest {
     class NoViolations {
         @Test
         void junit3TestWithAssert() {
-            assertNoViolations("""
-                    import student.TestCase;
-                    class MyTest extends TestCase {
-                        public void testFoo() {
-                            assertEquals(1, 1);
-                        }
-                    }""");
+            assertNoViolations("import student.TestCase;\n"
+                    + "class MyTest extends TestCase {\n"
+                    + "    public void testFoo() {\n"
+                    + "        assertEquals(1, 1);\n"
+                    + "    }\n"
+                    + "}");
         }
 
         @Test
         void junit4TestWithAssert() {
-            assertNoViolations("""
-                    import org.junit.Test;
-                    import static org.junit.Assert.assertEquals;
-                    class MyTest {
-                        @Test
-                        public void testFoo() {
-                            assertEquals(1, 1);
-                        }
-                    }""");
+            assertNoViolations("import org.junit.Test;\n"
+                    + "import static org.junit.Assert.assertEquals;\n"
+                    + "class MyTest {\n"
+                    + "    @Test\n"
+                    + "    public void testFoo() {\n"
+                    + "        assertEquals(1, 1);\n"
+                    + "    }\n"
+                    + "}");
         }
 
         @Test
         void junit5TestWithAssert() {
-            assertNoViolations("""
-                    import org.junit.jupiter.api.Test;
-                    import static org.junit.jupiter.api.Assertions.assertTrue;
-                    class MyTest {
-                        @Test
-                        void testFoo() {
-                            assertTrue(true);
-                        }
-                    }""");
+            assertNoViolations("import org.junit.jupiter.api.Test;\n"
+                    + "import static org.junit.jupiter.api.Assertions.assertTrue;\n"
+                    + "class MyTest {\n"
+                    + "    @Test\n"
+                    + "    void testFoo() {\n"
+                    + "        assertTrue(true);\n"
+                    + "    }\n"
+                    + "}");
         }
 
         @Test
         void testWithFailCall() {
-            assertNoViolations("""
-                    import org.junit.jupiter.api.Test;
-                    import static org.junit.jupiter.api.Assertions.fail;
-                    class MyTest {
-                        @Test
-                        void testFoo() {
-                            fail("not implemented");
-                        }
-                    }""");
+            assertNoViolations("import org.junit.jupiter.api.Test;\n"
+                    + "import static org.junit.jupiter.api.Assertions.fail;\n"
+                    + "class MyTest {\n"
+                    + "    @Test\n"
+                    + "    void testFoo() {\n"
+                    + "        fail(\"not implemented\");\n"
+                    + "    }\n"
+                    + "}");
         }
 
         @Test
         void nonTestMethod() {
-            assertNoViolations("""
-                    import student.TestCase;
-                    class MyTest extends TestCase {
-                        public void helperMethod() {
-                            int x = 1;
-                        }
-                    }""");
+            assertNoViolations("import student.TestCase;\n"
+                    + "class MyTest extends TestCase {\n"
+                    + "    public void helperMethod() {\n"
+                    + "        int x = 1;\n"
+                    + "    }\n"
+                    + "}");
         }
 
         @Test
         void junit4ExpectedAnnotation() {
-            assertNoViolations("""
-                    import org.junit.Test;
-                    class MyTest {
-                        @Test(expected = RuntimeException.class)
-                        public void testThrows() {
-                            throw new RuntimeException();
-                        }
-                    }""");
+            assertNoViolations("import org.junit.Test;\n"
+                    + "class MyTest {\n"
+                    + "    @Test(expected = RuntimeException.class)\n"
+                    + "    public void testThrows() {\n"
+                    + "        throw new RuntimeException();\n"
+                    + "    }\n"
+                    + "}");
         }
     }
 
@@ -146,53 +140,49 @@ class UnitTestShouldIncludeAssertRuleTest {
     class Violations {
         @Test
         void junit3TestWithoutAssert() {
-            assertViolationCount("""
-                    import student.TestCase;
-                    class MyTest extends TestCase {
-                        public void testFoo() {
-                            int x = 1;
-                        }
-                    }""", 1);
+            assertViolationCount("import student.TestCase;\n"
+                    + "class MyTest extends TestCase {\n"
+                    + "    public void testFoo() {\n"
+                    + "        int x = 1;\n"
+                    + "    }\n"
+                    + "}", 1);
         }
 
         @Test
         void junit5TestWithoutAssert() {
-            assertViolationCount("""
-                    import org.junit.jupiter.api.Test;
-                    class MyTest {
-                        @Test
-                        void testFoo() {
-                            int x = 1;
-                        }
-                    }""", 1);
+            assertViolationCount("import org.junit.jupiter.api.Test;\n"
+                    + "class MyTest {\n"
+                    + "    @Test\n"
+                    + "    void testFoo() {\n"
+                    + "        int x = 1;\n"
+                    + "    }\n"
+                    + "}", 1);
         }
 
         @Test
         void junit4TestWithoutAssert() {
-            assertViolationCount("""
-                    import org.junit.Test;
-                    class MyTest {
-                        @Test
-                        public void testFoo() {
-                            int x = 1;
-                        }
-                    }""", 1);
+            assertViolationCount("import org.junit.Test;\n"
+                    + "class MyTest {\n"
+                    + "    @Test\n"
+                    + "    public void testFoo() {\n"
+                    + "        int x = 1;\n"
+                    + "    }\n"
+                    + "}", 1);
         }
 
         @Test
         void multipleTestsWithoutAsserts() {
-            assertViolationCount("""
-                    import org.junit.jupiter.api.Test;
-                    class MyTest {
-                        @Test
-                        void testFoo() {
-                            int x = 1;
-                        }
-                        @Test
-                        void testBar() {
-                            int y = 2;
-                        }
-                    }""", 2);
+            assertViolationCount("import org.junit.jupiter.api.Test;\n"
+                    + "class MyTest {\n"
+                    + "    @Test\n"
+                    + "    void testFoo() {\n"
+                    + "        int x = 1;\n"
+                    + "    }\n"
+                    + "    @Test\n"
+                    + "    void testBar() {\n"
+                    + "        int y = 2;\n"
+                    + "    }\n"
+                    + "}", 2);
         }
     }
 
@@ -201,15 +191,14 @@ class UnitTestShouldIncludeAssertRuleTest {
         @Test
         void customAssertMethodSuppressesViolation() {
             setRuleProperty(rule, "extraAssertMethodNames", List.of("myCustomAssert"));
-            assertNoViolations("""
-                    import org.junit.jupiter.api.Test;
-                    class MyTest {
-                        @Test
-                        void testFoo() {
-                            myCustomAssert(1);
-                        }
-                        void myCustomAssert(int x) { }
-                    }""");
+            assertNoViolations("import org.junit.jupiter.api.Test;\n"
+                    + "class MyTest {\n"
+                    + "    @Test\n"
+                    + "    void testFoo() {\n"
+                    + "        myCustomAssert(1);\n"
+                    + "    }\n"
+                    + "    void myCustomAssert(int x) { }\n"
+                    + "}");
         }
     }
 }

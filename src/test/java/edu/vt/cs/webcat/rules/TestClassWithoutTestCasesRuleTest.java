@@ -80,45 +80,40 @@ class TestClassWithoutTestCasesRuleTest {
     class NoViolations {
         @Test
         void junit3ClassWithTestMethod() {
-            assertNoViolations("""
-                    import student.TestCase;
-                    class MyTest extends TestCase {
-                        public void testSomething() { }
-                    }""");
+            assertNoViolations("import student.TestCase;\n"
+                    + "class MyTest extends TestCase {\n"
+                    + "    public void testSomething() { }\n"
+                    + "}");
         }
 
         @Test
         void junit5ClassWithTestMethod() {
-            assertNoViolations("""
-                    import org.junit.jupiter.api.Test;
-                    class TestFoo {
-                        @Test
-                        void testSomething() { }
-                    }""");
+            assertNoViolations("import org.junit.jupiter.api.Test;\n"
+                    + "class TestFoo {\n"
+                    + "    @Test\n"
+                    + "    void testSomething() { }\n"
+                    + "}");
         }
 
         @Test
         void nonTestClass() {
-            assertNoViolations("""
-                    class Foo {
-                        void doStuff() { }
-                    }""");
+            assertNoViolations("class Foo {\n"
+                    + "    void doStuff() { }\n"
+                    + "}");
         }
 
         @Test
         void abstractTestClass() {
-            assertNoViolations("""
-                    abstract class TestBase {
-                        void doStuff() { }
-                    }""");
+            assertNoViolations("abstract class TestBase {\n"
+                    + "    void doStuff() { }\n"
+                    + "}");
         }
 
         @Test
         void interfaceWithTestName() {
-            assertNoViolations("""
-                    interface TestInterface {
-                        void doStuff();
-                    }""");
+            assertNoViolations("interface TestInterface {\n"
+                    + "    void doStuff();\n"
+                    + "}");
         }
     }
 
@@ -126,43 +121,38 @@ class TestClassWithoutTestCasesRuleTest {
     class Violations {
         @Test
         void junit3ClassWithNoTests() {
-            assertViolationCount("""
-                    import student.TestCase;
-                    class MyTest extends TestCase {
-                        public void helperMethod() { }
-                    }""", 1);
+            assertViolationCount("import student.TestCase;\n"
+                    + "class MyTest extends TestCase {\n"
+                    + "    public void helperMethod() { }\n"
+                    + "}", 1);
         }
 
         @Test
         void testNamePatternClassWithNoTests() {
-            assertViolationCount("""
-                    class TestFoo {
-                        void helperMethod() { }
-                    }""", 1);
+            assertViolationCount("class TestFoo {\n"
+                    + "    void helperMethod() { }\n"
+                    + "}", 1);
         }
 
         @Test
         void testSuffixPatternWithNoTests() {
-            assertViolationCount("""
-                    class FooTest {
-                        void helperMethod() { }
-                    }""", 1);
+            assertViolationCount("class FooTest {\n"
+                    + "    void helperMethod() { }\n"
+                    + "}", 1);
         }
 
         @Test
         void testCaseSuffixPatternWithNoTests() {
-            assertViolationCount("""
-                    class FooTestCase {
-                        void helperMethod() { }
-                    }""", 1);
+            assertViolationCount("class FooTestCase {\n"
+                    + "    void helperMethod() { }\n"
+                    + "}", 1);
         }
 
         @Test
         void emptyTestClass() {
-            assertViolationCount("""
-                    import student.TestCase;
-                    class MyTest extends TestCase {
-                    }""", 1);
+            assertViolationCount("import student.TestCase;\n"
+                    + "class MyTest extends TestCase {\n"
+                    + "}", 1);
         }
     }
 
@@ -171,28 +161,25 @@ class TestClassWithoutTestCasesRuleTest {
         @Test
         void emptyPatternDisablesDetectionByName() {
             setRuleProperty(rule, "testClassPattern", Pattern.compile(""));
-            assertNoViolations("""
-                    class TestFoo {
-                        void helperMethod() { }
-                    }""");
+            assertNoViolations("class TestFoo {\n"
+                    + "    void helperMethod() { }\n"
+                    + "}");
         }
 
         @Test
         void customPatternMatchesClass() {
             setRuleProperty(rule, "testClassPattern", Pattern.compile(".*Spec$"));
-            assertViolationCount("""
-                    class FooSpec {
-                        void helperMethod() { }
-                    }""", 1);
+            assertViolationCount("class FooSpec {\n"
+                    + "    void helperMethod() { }\n"
+                    + "}", 1);
         }
 
         @Test
         void customPatternDoesNotMatchDefaultNames() {
             setRuleProperty(rule, "testClassPattern", Pattern.compile(".*Spec$"));
-            assertNoViolations("""
-                    class TestFoo {
-                        void helperMethod() { }
-                    }""");
+            assertNoViolations("class TestFoo {\n"
+                    + "    void helperMethod() { }\n"
+                    + "}");
         }
     }
 }

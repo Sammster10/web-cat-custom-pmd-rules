@@ -372,11 +372,11 @@ public class StrictJavadocRule extends AbstractJavaRulechainRule {
         int returnTagCount = 0;
 
         for (JavadocTag tag : tags) {
-            if ("param".equals(tag.name())) {
+            if ("param".equals(tag.getName())) {
                 validateParamTag(node, data, kind, name, tag,
                         actualParameters, seenParameters,
                         actualTypeParameters, seenTypeParameters);
-            } else if ("return".equals(tag.name())) {
+            } else if ("return".equals(tag.getName())) {
                 returnTagCount++;
             }
         }
@@ -421,7 +421,7 @@ public class StrictJavadocRule extends AbstractJavaRulechainRule {
             Set<String> actualTypeParameters,
             Set<String> seenTypeParameters
     ) {
-        if (tag.subject() == null || tag.subject().isBlank()) {
+        if (tag.getSubject() == null || tag.getSubject().isBlank()) {
             addViolation(
                     data,
                     node,
@@ -432,44 +432,44 @@ public class StrictJavadocRule extends AbstractJavaRulechainRule {
             return;
         }
 
-        if (isTypeParameterTag(tag.subject())) {
-            if (!seenTypeParameters.add(tag.subject()) && !isDuplicateAllowed("param")) {
+        if (isTypeParameterTag(tag.getSubject())) {
+            if (!seenTypeParameters.add(tag.getSubject()) && !isDuplicateAllowed("param")) {
                 addViolation(
                         data,
                         node,
                         getProperty(DUPLICATE_TYPE_PARAM_MESSAGE),
                         kind,
                         quoted(name),
-                        quoted(tag.subject())
+                        quoted(tag.getSubject())
                 );
-            } else if (!actualTypeParameters.contains(tag.subject())) {
+            } else if (!actualTypeParameters.contains(tag.getSubject())) {
                 addViolation(
                         data,
                         node,
                         getProperty(UNKNOWN_TYPE_PARAM_MESSAGE),
                         kind,
                         quoted(name),
-                        quoted(tag.subject())
+                        quoted(tag.getSubject())
                 );
             }
         } else {
-            if (!seenParameters.add(tag.subject()) && !isDuplicateAllowed("param")) {
+            if (!seenParameters.add(tag.getSubject()) && !isDuplicateAllowed("param")) {
                 addViolation(
                         data,
                         node,
                         getProperty(DUPLICATE_PARAM_MESSAGE),
                         kind,
                         quoted(name),
-                        quoted(tag.subject())
+                        quoted(tag.getSubject())
                 );
-            } else if (!actualParameters.contains(tag.subject())) {
+            } else if (!actualParameters.contains(tag.getSubject())) {
                 addViolation(
                         data,
                         node,
                         getProperty(UNKNOWN_PARAM_MESSAGE),
                         kind,
                         quoted(name),
-                        quoted(tag.subject())
+                        quoted(tag.getSubject())
                 );
             }
         }
@@ -545,30 +545,40 @@ public class StrictJavadocRule extends AbstractJavaRulechainRule {
         boolean hasNonEmptyVersion = false;
 
         for (JavadocTag tag : tags) {
-            switch (tag.name()) {
-                case "author" -> {
+            switch (tag.getName()) {
+                case "author": {
                     authorCount++;
-                    if (tag.text() != null && !tag.text().isBlank()) {
+                    if (tag.getText() != null && !tag.getText().isBlank()) {
                         hasNonEmptyAuthor = true;
                     }
+                    break;
                 }
-                case "version" -> {
+                case "version": {
                     versionCount++;
-                    if (tag.text() != null && !tag.text().isBlank()) {
+                    if (tag.getText() != null && !tag.getText().isBlank()) {
                         hasNonEmptyVersion = true;
                     }
+                    break;
                 }
-                case "param" -> validateTypeParamTag(
-                        node, data, kind, name, tag, actualTypeParameters, seenTypeParameters
-                );
-                case "return", "throws", "exception" -> addViolation(
-                        data,
-                        node,
-                        getProperty(UNUSED_TAG_ON_TYPE_MESSAGE),
-                        kind,
-                        quoted(name),
-                        tag.name()
-                );
+                case "param": {
+                    validateTypeParamTag(
+                            node, data, kind, name, tag, actualTypeParameters, seenTypeParameters
+                    );
+                    break;
+                }
+                case "return":
+                case "throws":
+                case "exception": {
+                    addViolation(
+                            data,
+                            node,
+                            getProperty(UNUSED_TAG_ON_TYPE_MESSAGE),
+                            kind,
+                            quoted(name),
+                            tag.getName()
+                    );
+                    break;
+                }
             }
         }
 
@@ -598,7 +608,7 @@ public class StrictJavadocRule extends AbstractJavaRulechainRule {
             Set<String> actualTypeParameters,
             Set<String> seenTypeParameters
     ) {
-        if (tag.subject() == null || tag.subject().isBlank()) {
+        if (tag.getSubject() == null || tag.getSubject().isBlank()) {
             addViolation(
                     data,
                     node,
@@ -606,32 +616,32 @@ public class StrictJavadocRule extends AbstractJavaRulechainRule {
                     kind,
                     quoted(name)
             );
-        } else if (!isTypeParameterTag(tag.subject())) {
+        } else if (!isTypeParameterTag(tag.getSubject())) {
             addViolation(
                     data,
                     node,
                     getProperty(INVALID_TYPE_PARAM_TARGET_MESSAGE),
                     kind,
                     quoted(name),
-                    quoted(tag.subject())
+                    quoted(tag.getSubject())
             );
-        } else if (!seenTypeParameters.add(tag.subject()) && !isDuplicateAllowed("param")) {
+        } else if (!seenTypeParameters.add(tag.getSubject()) && !isDuplicateAllowed("param")) {
             addViolation(
                     data,
                     node,
                     getProperty(DUPLICATE_TYPE_PARAM_MESSAGE),
                     kind,
                     quoted(name),
-                    quoted(tag.subject())
+                    quoted(tag.getSubject())
             );
-        } else if (!actualTypeParameters.contains(tag.subject())) {
+        } else if (!actualTypeParameters.contains(tag.getSubject())) {
             addViolation(
                     data,
                     node,
                     getProperty(UNKNOWN_TYPE_PARAM_MESSAGE),
                     kind,
                     quoted(name),
-                    quoted(tag.subject())
+                    quoted(tag.getSubject())
             );
         }
     }
@@ -725,7 +735,8 @@ public class StrictJavadocRule extends AbstractJavaRulechainRule {
 
         for (int index = 0; index < formalParameters.getNumChildren(); index++) {
             Object child = formalParameters.getChild(index);
-            if (child instanceof ASTFormalParameter parameter) {
+            if (child instanceof ASTFormalParameter) {
+                ASTFormalParameter parameter = (ASTFormalParameter) child;
                 names.add(parameter.getVarId().getName());
             }
         }
@@ -744,7 +755,7 @@ public class StrictJavadocRule extends AbstractJavaRulechainRule {
     private String formatFieldNames(ASTFieldDeclaration node) {
         StringBuilder builder = new StringBuilder();
         for (ASTVariableId variableId : node) {
-            if (!builder.isEmpty()) {
+            if (builder.length() > 0) {
                 builder.append(", ");
             }
             builder.append(variableId.getName());
@@ -889,7 +900,28 @@ public class StrictJavadocRule extends AbstractJavaRulechainRule {
         asCtx(data).addViolationWithMessage((net.sourceforge.pmd.lang.ast.Node) node, formatted);
     }
 
-    private record JavadocTag(String name, String subject, String text) {
+    private static class JavadocTag {
+        private final String name;
+        private final String subject;
+        private final String text;
+
+        private JavadocTag(String name, String subject, String text) {
+            this.name = name;
+            this.subject = subject;
+            this.text = text;
+        }
+
+        public String getName() {
+            return name;
+        }
+
+        public String getSubject() {
+            return subject;
+        }
+
+        public String getText() {
+            return text;
+        }
     }
 
     private static final class TagAccumulator {
@@ -910,7 +942,7 @@ public class StrictJavadocRule extends AbstractJavaRulechainRule {
             if (additionalText == null || additionalText.isEmpty()) {
                 return;
             }
-            if (!text.isEmpty()) {
+            if (text.length() > 0) {
                 text.append(' ');
             }
             text.append(additionalText);

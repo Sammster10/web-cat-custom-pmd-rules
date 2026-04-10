@@ -63,46 +63,46 @@ class JUnitSpellingRuleTest {
     class NoViolations {
         @Test
         void correctSetUpSpelling() {
-            assertNoViolations("""
-                    import student.TestCase;
-                    class MyTest extends TestCase {
-                        public void setUp() { }
-                    }""");
+            assertNoViolations(
+                    "import student.TestCase;\n"
+                            + "class MyTest extends TestCase {\n"
+                            + "    public void setUp() { }\n"
+                            + "}");
         }
 
         @Test
         void correctTearDownSpelling() {
-            assertNoViolations("""
-                    import student.TestCase;
-                    class MyTest extends TestCase {
-                        public void tearDown() { }
-                    }""");
+            assertNoViolations(
+                    "import student.TestCase;\n"
+                            + "class MyTest extends TestCase {\n"
+                            + "    public void tearDown() { }\n"
+                            + "}");
         }
 
         @Test
         void unrelatedMethodName() {
-            assertNoViolations("""
-                    import student.TestCase;
-                    class MyTest extends TestCase {
-                        public void testSomething() { }
-                    }""");
+            assertNoViolations(
+                    "import student.TestCase;\n"
+                            + "class MyTest extends TestCase {\n"
+                            + "    public void testSomething() { }\n"
+                            + "}");
         }
 
         @Test
         void nonTestClass() {
-            assertNoViolations("""
-                    class NotATest {
-                        public void setup() { }
-                    }""");
+            assertNoViolations(
+                    "class NotATest {\n"
+                            + "    public void setup() { }\n"
+                            + "}");
         }
 
         @Test
         void methodWithParameters() {
-            assertNoViolations("""
-                    import student.TestCase;
-                    class MyTest extends TestCase {
-                        public void setup(int x) { }
-                    }""");
+            assertNoViolations(
+                    "import student.TestCase;\n"
+                            + "class MyTest extends TestCase {\n"
+                            + "    public void setup(int x) { }\n"
+                            + "}");
         }
     }
 
@@ -110,48 +110,43 @@ class JUnitSpellingRuleTest {
     class Violations {
         @Test
         void lowercaseSetup() {
-            assertViolationCount("""
-                    import student.TestCase;
-                    class MyTest extends TestCase {
-                        public void setup() { }
-                    }""", 1);
+            assertViolationCount("import student.TestCase;\n"
+                    + "class MyTest extends TestCase {\n"
+                    + "    public void setup() { }\n"
+                    + "}", 1);
         }
 
         @Test
         void uppercaseSetup() {
-            assertViolationCount("""
-                    import student.TestCase;
-                    class MyTest extends TestCase {
-                        public void SETUP() { }
-                    }""", 1);
+            assertViolationCount("import student.TestCase;\n"
+                    + "class MyTest extends TestCase {\n"
+                    + "    public void SETUP() { }\n"
+                    + "}", 1);
         }
 
         @Test
         void lowercaseTeardown() {
-            assertViolationCount("""
-                    import student.TestCase;
-                    class MyTest extends TestCase {
-                        public void teardown() { }
-                    }""", 1);
+            assertViolationCount("import student.TestCase;\n"
+                    + "class MyTest extends TestCase {\n"
+                    + "    public void teardown() { }\n"
+                    + "}", 1);
         }
 
         @Test
         void uppercaseTeardown() {
-            assertViolationCount("""
-                    import student.TestCase;
-                    class MyTest extends TestCase {
-                        public void TEARDOWN() { }
-                    }""", 1);
+            assertViolationCount("import student.TestCase;\n"
+                    + "class MyTest extends TestCase {\n"
+                    + "    public void TEARDOWN() { }\n"
+                    + "}", 1);
         }
 
         @Test
         void bothMisspelled() {
-            assertViolationCount("""
-                    import student.TestCase;
-                    class MyTest extends TestCase {
-                        public void setup() { }
-                        public void teardown() { }
-                    }""", 2);
+            assertViolationCount("import student.TestCase;\n"
+                    + "class MyTest extends TestCase {\n"
+                    + "    public void setup() { }\n"
+                    + "    public void teardown() { }\n"
+                    + "}", 2);
         }
     }
 }

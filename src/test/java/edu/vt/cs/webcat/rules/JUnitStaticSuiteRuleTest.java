@@ -63,37 +63,33 @@ class JUnitStaticSuiteRuleTest {
     class NoViolations {
         @Test
         void publicStaticSuiteMethod() {
-            assertNoViolations("""
-                    import student.TestCase;
-                    class MyTest extends TestCase {
-                        public static junit.framework.Test suite() { return null; }
-                    }""");
+            assertNoViolations("import student.TestCase;\n"
+                    + "class MyTest extends TestCase {\n"
+                    + "    public static junit.framework.Test suite() { return null; }\n"
+                    + "}");
         }
 
         @Test
         void noSuiteMethod() {
-            assertNoViolations("""
-                    import student.TestCase;
-                    class MyTest extends TestCase {
-                        public void testSomething() { }
-                    }""");
+            assertNoViolations("import student.TestCase;\n"
+                    + "class MyTest extends TestCase {\n"
+                    + "    public void testSomething() { }\n"
+                    + "}");
         }
 
         @Test
         void nonTestClass() {
-            assertNoViolations("""
-                    class NotATest {
-                        private void suite() { }
-                    }""");
+            assertNoViolations("class NotATest {\n"
+                    + "    private void suite() { }\n"
+                    + "}");
         }
 
         @Test
         void suiteMethodWithParameters() {
-            assertNoViolations("""
-                    import student.TestCase;
-                    class MyTest extends TestCase {
-                        private void suite(int x) { }
-                    }""");
+            assertNoViolations("import student.TestCase;\n"
+                    + "class MyTest extends TestCase {\n"
+                    + "    private void suite(int x) { }\n"
+                    + "}");
         }
     }
 
@@ -101,38 +97,38 @@ class JUnitStaticSuiteRuleTest {
     class Violations {
         @Test
         void nonPublicSuiteMethod() {
-            assertViolationCount("""
-                    import student.TestCase;
-                    class MyTest extends TestCase {
-                        static junit.framework.Test suite() { return null; }
-                    }""", 1);
+            assertViolationCount(
+                    "import student.TestCase;\n"
+                            + "class MyTest extends TestCase {\n"
+                            + "    static junit.framework.Test suite() { return null; }\n"
+                            + "}", 1);
         }
 
         @Test
         void nonStaticSuiteMethod() {
-            assertViolationCount("""
-                    import student.TestCase;
-                    class MyTest extends TestCase {
-                        public junit.framework.Test suite() { return null; }
-                    }""", 1);
+            assertViolationCount(
+                    "import student.TestCase;\n"
+                            + "class MyTest extends TestCase {\n"
+                            + "    public junit.framework.Test suite() { return null; }\n"
+                            + "}", 1);
         }
 
         @Test
         void privateSuiteMethod() {
-            assertViolationCount("""
-                    import student.TestCase;
-                    class MyTest extends TestCase {
-                        private static junit.framework.Test suite() { return null; }
-                    }""", 1);
+            assertViolationCount(
+                    "import student.TestCase;\n"
+                            + "class MyTest extends TestCase {\n"
+                            + "    private static junit.framework.Test suite() { return null; }\n"
+                            + "}", 1);
         }
 
         @Test
         void neitherPublicNorStatic() {
-            assertViolationCount("""
-                    import student.TestCase;
-                    class MyTest extends TestCase {
-                        junit.framework.Test suite() { return null; }
-                    }""", 1);
+            assertViolationCount(
+                    "import student.TestCase;\n"
+                            + "class MyTest extends TestCase {\n"
+                            + "    junit.framework.Test suite() { return null; }\n"
+                            + "}", 1);
         }
     }
 }

@@ -198,7 +198,8 @@ public class LineLayoutRule extends AbstractJavaRulechainRule {
             return true;
         }
 
-        if (stmt.getParent() instanceof ASTForStatement forStmt) {
+        if (stmt.getParent() instanceof ASTForStatement) {
+            ASTForStatement forStmt = (ASTForStatement) stmt.getParent();
             int forLine = forStmt.getFirstToken().getReportLocation().getStartLine();
             if (forHeaderLines.contains(forLine)) {
                 ASTStatement body = getForBody(forStmt);

@@ -79,42 +79,42 @@ class FieldVisibilityRuleTest {
     class NoViolations {
         @Test
         void privateField() {
-            assertNoViolations("""
-                    class T {
-                        private int x;
-                    }""");
+            assertNoViolations(
+                    "class T {\n"
+                            + "    private int x;\n"
+                            + "}");
         }
 
         @Test
         void protectedFieldAllowedByDefault() {
-            assertNoViolations("""
-                    class T {
-                        protected int x;
-                    }""");
+            assertNoViolations(
+                    "class T {\n"
+                            + "    protected int x;\n"
+                            + "}");
         }
 
         @Test
         void publicStaticFinalField() {
-            assertNoViolations("""
-                    class T {
-                        public static final int MAX = 10;
-                    }""");
+            assertNoViolations(
+                    "class T {\n"
+                            + "    public static final int MAX = 10;\n"
+                            + "}");
         }
 
         @Test
         void privateStaticField() {
-            assertNoViolations("""
-                    class T {
-                        private static int count;
-                    }""");
+            assertNoViolations(
+                    "class T {\n"
+                            + "    private static int count;\n"
+                            + "}");
         }
 
         @Test
         void privateFinalField() {
-            assertNoViolations("""
-                    class T {
-                        private final int x = 1;
-                    }""");
+            assertNoViolations(
+                    "class T {\n"
+                            + "    private final int x = 1;\n"
+                            + "}");
         }
     }
 
@@ -122,35 +122,31 @@ class FieldVisibilityRuleTest {
     class MissingVisibilityModifier {
         @Test
         void packagePrivateField() {
-            assertHasViolation("""
-                    class T {
-                        int x;
-                    }""", "missing a visibility modifier");
+            assertHasViolation("class T {\n"
+                    + "    int x;\n"
+                    + "}", "missing a visibility modifier");
         }
 
         @Test
         void packagePrivateStaticField() {
-            assertHasViolation("""
-                    class T {
-                        static int x;
-                    }""", "missing a visibility modifier");
+            assertHasViolation("class T {\n"
+                    + "    static int x;\n"
+                    + "}", "missing a visibility modifier");
         }
 
         @Test
         void packagePrivateFinalField() {
-            assertHasViolation("""
-                    class T {
-                        final int x = 1;
-                    }""", "missing a visibility modifier");
+            assertHasViolation("class T {\n"
+                    + "    final int x = 1;\n"
+                    + "}", "missing a visibility modifier");
         }
 
         @Test
         void multiplePackagePrivateFields() {
-            assertViolationCount("""
-                    class T {
-                        int x;
-                        int y;
-                    }""", 2);
+            assertViolationCount("class T {\n"
+                    + "    int x;\n"
+                    + "    int y;\n"
+                    + "}", 2);
         }
     }
 
@@ -158,26 +154,23 @@ class FieldVisibilityRuleTest {
     class PublicNonConstantField {
         @Test
         void publicNonStaticField() {
-            assertHasViolation("""
-                    class T {
-                        public int x;
-                    }""", "not static final");
+            assertHasViolation("class T {\n"
+                    + "    public int x;\n"
+                    + "}", "not static final");
         }
 
         @Test
         void publicStaticNonFinalField() {
-            assertHasViolation("""
-                    class T {
-                        public static int x;
-                    }""", "not static final");
+            assertHasViolation("class T {\n"
+                    + "    public static int x;\n"
+                    + "}", "not static final");
         }
 
         @Test
         void publicFinalNonStaticField() {
-            assertHasViolation("""
-                    class T {
-                        public final int x = 1;
-                    }""", "not static final");
+            assertHasViolation("class T {\n"
+                    + "    public final int x = 1;\n"
+                    + "}", "not static final");
         }
     }
 
@@ -186,18 +179,17 @@ class FieldVisibilityRuleTest {
         @Test
         void protectedFieldFlaggedWhenDisallowed() {
             setRuleProperty(rule, "allowProtected", false);
-            assertHasViolation("""
-                    class T {
-                        protected int x;
-                    }""", "should be private");
+            assertHasViolation("class T {\n"
+                    + "    protected int x;\n"
+                    + "}", "should be private");
         }
 
         @Test
         void protectedFieldAllowedByDefault() {
-            assertNoViolations("""
-                    class T {
-                        protected int x;
-                    }""");
+            assertNoViolations(
+                    "class T {\n"
+                            + "    protected int x;\n"
+                            + "}");
         }
     }
 
@@ -206,29 +198,26 @@ class FieldVisibilityRuleTest {
         @Test
         void customMissingModifierMessage() {
             setRuleProperty(rule, "missingModifierMessage", "No visibility on {0}");
-            assertHasViolation("""
-                    class T {
-                        int x;
-                    }""", "No visibility on x");
+            assertHasViolation("class T {\n"
+                    + "    int x;\n"
+                    + "}", "No visibility on x");
         }
 
         @Test
         void customPublicFieldMessage() {
             setRuleProperty(rule, "publicFieldMessage", "Bad public field {0}");
-            assertHasViolation("""
-                    class T {
-                        public int x;
-                    }""", "Bad public field x");
+            assertHasViolation("class T {\n"
+                    + "    public int x;\n"
+                    + "}", "Bad public field x");
         }
 
         @Test
         void customProtectedFieldMessage() {
             setRuleProperty(rule, "allowProtected", false);
             setRuleProperty(rule, "protectedFieldMessage", "Protected not ok: {0}");
-            assertHasViolation("""
-                    class T {
-                        protected int x;
-                    }""", "Protected not ok: x");
+            assertHasViolation("class T {\n"
+                    + "    protected int x;\n"
+                    + "}", "Protected not ok: x");
         }
     }
 
@@ -236,22 +225,21 @@ class FieldVisibilityRuleTest {
     class MixedFields {
         @Test
         void mixOfValidAndInvalidFields() {
-            String code = """
-                    class T {
-                        private int a;
-                        int b;
-                        public int c;
-                        public static final int D = 1;
-                    }""";
+            String code = "class T {\n"
+                    + "    private int a;\n"
+                    + "    int b;\n"
+                    + "    public int c;\n"
+                    + "    public static final int D = 1;\n"
+                    + "}";
             assertViolationCount(code, 2);
         }
 
         @Test
         void interfacePublicStaticFinalFieldsAllowed() {
-            assertNoViolations("""
-                    interface T {
-                        int X = 1;
-                    }""");
+            assertNoViolations(
+                    "interface T {\n"
+                            + "    int X = 1;\n"
+                            + "}");
         }
     }
 }

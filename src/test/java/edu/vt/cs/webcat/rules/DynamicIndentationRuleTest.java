@@ -71,53 +71,49 @@ class DynamicIndentationRuleTest {
     class DetectsIndentSize {
         @Test
         void detectsTwoSpaceIndent() {
-            String code = """
-                    class T {
-                      int x;
-                      int y;
-                      void m() {
-                        int z = 1;
-                      }
-                    }""";
+            String code = "class T {\n"
+                    + "  int x;\n"
+                    + "  int y;\n"
+                    + "  void m() {\n"
+                    + "    int z = 1;\n"
+                    + "  }\n"
+                    + "}";
             assertNoViolations(code);
         }
 
         @Test
         void detectsThreeSpaceIndent() {
-            String code = """
-                    class T {
-                       int x;
-                       int y;
-                       void m() {
-                          int z = 1;
-                       }
-                    }""";
+            String code = "class T {\n"
+                    + "   int x;\n"
+                    + "   int y;\n"
+                    + "   void m() {\n"
+                    + "      int z = 1;\n"
+                    + "   }\n"
+                    + "}";
             assertNoViolations(code);
         }
 
         @Test
         void detectsFourSpaceIndent() {
-            String code = """
-                    class T {
-                        int x;
-                        int y;
-                        void m() {
-                            int z = 1;
-                        }
-                    }""";
+            String code = "class T {\n"
+                    + "    int x;\n"
+                    + "    int y;\n"
+                    + "    void m() {\n"
+                    + "        int z = 1;\n"
+                    + "    }\n"
+                    + "}";
             assertNoViolations(code);
         }
 
         @Test
         void detectsEightSpaceIndent() {
-            String code = """
-                    class T {
-                            int x;
-                            int y;
-                            void m() {
-                                    int z = 1;
-                            }
-                    }""";
+            String code = "class T {\n"
+                    + "        int x;\n"
+                    + "        int y;\n"
+                    + "        void m() {\n"
+                    + "                int z = 1;\n"
+                    + "        }\n"
+                    + "}";
             assertNoViolations(code);
         }
     }
@@ -126,49 +122,46 @@ class DynamicIndentationRuleTest {
     class ConsistentWithDeviations {
         @Test
         void fourSpaceConventionWithOneDeviantLine() {
-            String code = """
-                    class T {
-                        int a;
-                        int b;
-                        int c;
-                        void m() {
-                          int x = 1;
-                        }
-                    }""";
+            String code = "class T {\n"
+                    + "    int a;\n"
+                    + "    int b;\n"
+                    + "    int c;\n"
+                    + "    void m() {\n"
+                    + "      int x = 1;\n"
+                    + "    }\n"
+                    + "}";
             assertHasViolation(code, "indented incorrectly");
         }
 
         @Test
         void twoSpaceConventionWithOneDeviantLine() {
-            String code = """
-                    class T {
-                      int a;
-                      int b;
-                      int c;
-                      void m() {
-                            int x = 1;
-                      }
-                    }""";
+            String code = "class T {\n"
+                    + "  int a;\n"
+                    + "  int b;\n"
+                    + "  int c;\n"
+                    + "  void m() {\n"
+                    + "        int x = 1;\n"
+                    + "  }\n"
+                    + "}";
             assertHasViolation(code, "indented incorrectly");
         }
 
         @Test
         void correctLinesNotReported() {
-            String code = """
-                    class T {
-                        int a;
-                        int b;
-                        int c;
-                        void m() {
-                          int deviant = 1;
-                            int correct = 2;
-                        }
-                    }""";
+            String code = "class T {\n"
+                    + "    int a;\n"
+                    + "    int b;\n"
+                    + "    int c;\n"
+                    + "    void m() {\n"
+                    + "      int deviant = 1;\n"
+                    + "        int correct = 2;\n"
+                    + "    }\n"
+                    + "}";
             List<RuleViolation> violations = runRule(code);
             assertEquals(1, violations.size(),
                     String.format("Expected exactly 1 violation but found %d: %s",
                             violations.size(), violations));
-            assertTrue(violations.getFirst().getDescription().contains("indented incorrectly"));
+            assertTrue(violations.get(0).getDescription().contains("indented incorrectly"));
         }
     }
 
@@ -176,29 +169,27 @@ class DynamicIndentationRuleTest {
     class InconsistentFile {
         @Test
         void noMajorityConventionReportsFileViolation() {
-            String code = """
-                    class T {
-                      int a;
-                       int b;
-                        int c;
-                         int d;
-                          int e;
-                           int f;
-                    }""";
+            String code = "class T {\n"
+                    + "  int a;\n"
+                    + "   int b;\n"
+                    + "    int c;\n"
+                    + "     int d;\n"
+                    + "      int e;\n"
+                    + "       int f;\n"
+                    + "}";
             assertHasViolation(code, "consistent indentation");
         }
 
         @Test
         void inconsistentFileExactlyOneViolation() {
-            String code = """
-                    class T {
-                      int a;
-                       int b;
-                        int c;
-                         int d;
-                          int e;
-                           int f;
-                    }""";
+            String code = "class T {\n"
+                    + "  int a;\n"
+                    + "   int b;\n"
+                    + "    int c;\n"
+                    + "     int d;\n"
+                    + "      int e;\n"
+                    + "       int f;\n"
+                    + "}";
             List<RuleViolation> violations = runRule(code);
             long inconsistentViolations = violations.stream()
                     .filter(v -> v.getDescription().contains("consistent indentation"))
@@ -208,20 +199,19 @@ class DynamicIndentationRuleTest {
 
         @Test
         void inconsistentFileExcludesPackageAndImports() {
-            String code = """
-                    package com.example;
-                    
-                    import java.util.List;
-                    import java.util.Map;
-                    
-                    class T {
-                      int a;
-                       int b;
-                        int c;
-                         int d;
-                          int e;
-                           int f;
-                    }""";
+            String code = "package com.example;\n"
+                    + "\n"
+                    + "import java.util.List;\n"
+                    + "import java.util.Map;\n"
+                    + "\n"
+                    + "class T {\n"
+                    + "  int a;\n"
+                    + "   int b;\n"
+                    + "    int c;\n"
+                    + "     int d;\n"
+                    + "      int e;\n"
+                    + "       int f;\n"
+                    + "}";
             List<RuleViolation> violations = runRule(code);
             long inconsistentViolations = violations.stream()
                     .filter(v -> v.getDescription().contains("consistent indentation"))
@@ -264,15 +254,14 @@ class DynamicIndentationRuleTest {
         @Test
         void customInconsistentFileMessage() {
             setRuleProperty(rule, "inconsistentFileMessage", "Fix your indentation!");
-            String code = """
-                    class T {
-                      int a;
-                       int b;
-                        int c;
-                         int d;
-                          int e;
-                           int f;
-                    }""";
+            String code = "class T {\n"
+                    + "  int a;\n"
+                    + "   int b;\n"
+                    + "    int c;\n"
+                    + "     int d;\n"
+                    + "      int e;\n"
+                    + "       int f;\n"
+                    + "}";
             assertHasViolation(code, "Fix your indentation!");
         }
 
@@ -288,15 +277,14 @@ class DynamicIndentationRuleTest {
         @Test
         void customIndentMessage() {
             setRuleProperty(rule, "indentViolationMessage", "Wrong indent at line {0}: expected {1} got {2}");
-            String code = """
-                    class T {
-                        int a;
-                        int b;
-                        int c;
-                        void m() {
-                          int deviant = 1;
-                        }
-                    }""";
+            String code = "class T {\n"
+                    + "    int a;\n"
+                    + "    int b;\n"
+                    + "    int c;\n"
+                    + "    void m() {\n"
+                    + "      int deviant = 1;\n"
+                    + "    }\n"
+                    + "}";
             assertHasViolation(code, "Wrong indent at line");
         }
     }
@@ -310,70 +298,63 @@ class DynamicIndentationRuleTest {
 
         @Test
         void onlyCommentsAndBlanks() {
-            String code = """
-                    // just a comment
-                    /* block comment */
-                    """;
+            String code = "// just a comment\n"
+                    + "/* block comment */\n";
             assertNoViolations(code);
         }
 
         @Test
         void singleIndentedLineEstablishesConvention() {
-            String code = """
-                    class T {
-                        int x;
-                    }""";
+            String code = "class T {\n"
+                    + "    int x;\n"
+                    + "}";
             assertNoViolations(code);
         }
 
         @Test
         void deepNestingConsistentTwoSpaces() {
-            String code = """
-                    class T {
-                      void m() {
-                        if (true) {
-                          if (true) {
-                            int x = 1;
-                          }
-                        }
-                      }
-                    }""";
+            String code = "class T {\n"
+                    + "  void m() {\n"
+                    + "    if (true) {\n"
+                    + "      if (true) {\n"
+                    + "        int x = 1;\n"
+                    + "      }\n"
+                    + "    }\n"
+                    + "  }\n"
+                    + "}";
             assertNoViolations(code);
         }
 
         @Test
         void deepNestingConsistentFourSpaces() {
-            String code = """
-                    class T {
-                        void m() {
-                            if (true) {
-                                if (true) {
-                                    int x = 1;
-                                }
-                            }
-                        }
-                    }""";
+            String code = "class T {\n"
+                    + "    void m() {\n"
+                    + "        if (true) {\n"
+                    + "            if (true) {\n"
+                    + "                int x = 1;\n"
+                    + "            }\n"
+                    + "        }\n"
+                    + "    }\n"
+                    + "}";
             assertNoViolations(code);
         }
 
         @Test
         void blankLinesIgnored() {
-            String code = """
-                    class T {
-                    
-                        int x;
-                    
-                        int y;
-                    
-                    }""";
+            String code = "class T {\n"
+                    + "\n"
+                    + "    int x;\n"
+                    + "\n"
+                    + "    int y;\n"
+                    + "\n"
+                    + "}";
             assertNoViolations(code);
         }
 
         @Test
         void fileWithOnlyTopLevelDeclarations() {
-            String code = """
-                    class T {
-                    }""";
+            String code = "class T {\n"
+                    + "}";
             assertNoViolations(code);
         }
     }
@@ -382,50 +363,47 @@ class DynamicIndentationRuleTest {
     class SwitchCaseIndentation {
         @Test
         void detectsFourSpaceWithSwitchCase() {
-            String code = """
-                    class T {
-                        void m(int x) {
-                            switch (x) {
-                                case 1:
-                                    int y = 1;
-                                    break;
-                                default:
-                                    break;
-                            }
-                        }
-                    }""";
+            String code = "class T {\n"
+                    + "    void m(int x) {\n"
+                    + "        switch (x) {\n"
+                    + "            case 1:\n"
+                    + "                int y = 1;\n"
+                    + "                break;\n"
+                    + "            default:\n"
+                    + "                break;\n"
+                    + "        }\n"
+                    + "    }\n"
+                    + "}";
             assertNoViolations(code);
         }
 
         @Test
         void detectsTwoSpaceWithSwitchCase() {
-            String code = """
-                    class T {
-                      void m(int x) {
-                        switch (x) {
-                          case 1:
-                            int y = 1;
-                            break;
-                          default:
-                            break;
-                        }
-                      }
-                    }""";
+            String code = "class T {\n"
+                    + "  void m(int x) {\n"
+                    + "    switch (x) {\n"
+                    + "      case 1:\n"
+                    + "        int y = 1;\n"
+                    + "        break;\n"
+                    + "      default:\n"
+                    + "        break;\n"
+                    + "    }\n"
+                    + "  }\n"
+                    + "}";
             assertNoViolations(code);
         }
 
         @Test
         void arrowCaseDetectedCorrectly() {
-            String code = """
-                    class T {
-                        void m(int x) {
-                            switch (x) {
-                                case 1 -> System.out.println(1);
-                                case 2 -> System.out.println(2);
-                                default -> System.out.println(0);
-                            }
-                        }
-                    }""";
+            String code = "class T {\n"
+                    + "    void m(int x) {\n"
+                    + "        switch (x) {\n"
+                    + "            case 1 -> System.out.println(1);\n"
+                    + "            case 2 -> System.out.println(2);\n"
+                    + "            default -> System.out.println(0);\n"
+                    + "        }\n"
+                    + "    }\n"
+                    + "}";
             assertNoViolations(code);
         }
     }
@@ -434,33 +412,31 @@ class DynamicIndentationRuleTest {
     class PackageAndImports {
         @Test
         void packageAndImportsAccepted() {
-            String code = """
-                    package com.example;
-                    
-                    import java.util.List;
-                    
-                    class T {
-                        int x;
-                        int y;
-                    }""";
+            String code = "package com.example;\n"
+                    + "\n"
+                    + "import java.util.List;\n"
+                    + "\n"
+                    + "class T {\n"
+                    + "    int x;\n"
+                    + "    int y;\n"
+                    + "}";
             assertNoViolations(code);
         }
 
         @Test
         void packageAndImportsWithMixedIndent() {
-            String code = """
-                    package com.example;
-                    
-                    import java.util.List;
-                    import java.util.Map;
-                    
-                    class T {
-                        int x;
-                        int y;
-                        void m() {
-                            int z = 1;
-                        }
-                    }""";
+            String code = "package com.example;\n"
+                    + "\n"
+                    + "import java.util.List;\n"
+                    + "import java.util.Map;\n"
+                    + "\n"
+                    + "class T {\n"
+                    + "    int x;\n"
+                    + "    int y;\n"
+                    + "    void m() {\n"
+                    + "        int z = 1;\n"
+                    + "    }\n"
+                    + "}";
             assertNoViolations(code);
         }
     }
@@ -469,12 +445,11 @@ class DynamicIndentationRuleTest {
     class StringLiterals {
         @Test
         void bracesInStringLiteralIgnored() {
-            String code = """
-                    class T {
-                        String s = "{ }";
-                        int x;
-                        int y;
-                    }""";
+            String code = "class T {\n"
+                    + "    String s = \"{ }\";\n"
+                    + "    int x;\n"
+                    + "    int y;\n"
+                    + "}";
             assertNoViolations(code);
         }
     }
@@ -483,25 +458,23 @@ class DynamicIndentationRuleTest {
     class BlockComments {
         @Test
         void blockCommentsSkipped() {
-            String code = """
-                    class T {
-                        /* { not a real brace } */
-                        int x;
-                        int y;
-                    }""";
+            String code = "class T {\n"
+                    + "    /* { not a real brace } */\n"
+                    + "    int x;\n"
+                    + "    int y;\n"
+                    + "}";
             assertNoViolations(code);
         }
 
         @Test
         void multiLineBlockCommentSkipped() {
-            String code = """
-                    class T {
-                        /*
-                        * comment
-                        */
-                        int x;
-                        int y;
-                    }""";
+            String code = "class T {\n"
+                    + "    /*\n"
+                    + "    * comment\n"
+                    + "    */\n"
+                    + "    int x;\n"
+                    + "    int y;\n"
+                    + "}";
             assertNoViolations(code);
         }
     }

@@ -131,13 +131,13 @@ class RegexRuleTest {
         @Test
         void multipleForbiddenOccurrences() {
             setRuleProperty(rule, "pattern", Pattern.compile("System\\.out"));
-            assertViolationCount("""
-                            class T {
-                                void m() {
-                                    System.out.println(1);
-                                    System.out.println(2);
-                                }
-                            }""",
+            assertViolationCount(
+                    "class T {\n"
+                            + "    void m() {\n"
+                            + "        System.out.println(1);\n"
+                            + "        System.out.println(2);\n"
+                            + "    }\n"
+                            + "}",
                     2);
         }
 
@@ -163,10 +163,9 @@ class RegexRuleTest {
             setRuleProperty(rule, "shouldMatch", false);
             setRuleProperty(rule, "pattern", Pattern.compile("TODO"));
             setRuleProperty(rule, "message", "Remove TODOs");
-            String code = """
-                    class T {
-                        // TODO fix this
-                    }""";
+            String code = "class T {\n"
+                    + "    // TODO fix this\n"
+                    + "}";
             List<RuleViolation> violations = runRule(code);
             assertFalse(violations.isEmpty(),
                     "Expected at least one violation for forbidden pattern TODO");
@@ -192,11 +191,10 @@ class RegexRuleTest {
         void caretMatchesLineStart() {
             setRuleProperty(rule, "shouldMatch", false);
             setRuleProperty(rule, "pattern", Pattern.compile("^\\s*\\*\\s*@author\\s+.*\\byour(-|\\s+)(name|pid|username)"));
-            String code = """
-                    /**
-                     * @author your username
-                     */
-                    class T { }""";
+            String code = "/**\n"
+                    + " * @author your username\n"
+                    + " */\n"
+                    + "class T { }";
             assertViolationCount(code, 1);
         }
 
@@ -204,11 +202,10 @@ class RegexRuleTest {
         void caretMatchesLineStartNoMatch() {
             setRuleProperty(rule, "shouldMatch", false);
             setRuleProperty(rule, "pattern", Pattern.compile("^\\s*\\*\\s*@author\\s+.*\\byour(-|\\s+)(name|pid|username)"));
-            String code = """
-                    /**
-                     * @author Jane Doe
-                     */
-                    class T { }""";
+            String code = "/**\n"
+                    + " * @author Jane Doe\n"
+                    + " */\n"
+                    + "class T { }";
             assertNoViolations(code);
         }
 
@@ -216,18 +213,16 @@ class RegexRuleTest {
         void shouldMatchMultilineCaretPresent() {
             setRuleProperty(rule, "shouldMatch", true);
             setRuleProperty(rule, "pattern", Pattern.compile("^package"));
-            assertNoViolations("""
-                    package foo;
-                    class T { }""");
+            assertNoViolations("package foo;\n"
+                    + "class T { }");
         }
 
         @Test
         void shouldMatchMultilineCaretAbsent() {
             setRuleProperty(rule, "shouldMatch", true);
             setRuleProperty(rule, "pattern", Pattern.compile("^import"));
-            assertHasViolation("""
-                    package foo;
-                    class T { }""", "Required pattern not found");
+            assertHasViolation("package foo;\n"
+                    + "class T { }", "Required pattern not found");
         }
 
         @Test
@@ -235,9 +230,8 @@ class RegexRuleTest {
             setRuleProperty(rule, "multiline", false);
             setRuleProperty(rule, "shouldMatch", false);
             setRuleProperty(rule, "pattern", Pattern.compile("^class"));
-            String code = """
-                    package foo;
-                    class T { }""";
+            String code = "package foo;\n"
+                    + "class T { }";
             assertNoViolations(code);
         }
     }
@@ -249,11 +243,10 @@ class RegexRuleTest {
             setRuleProperty(rule, "dotall", true);
             setRuleProperty(rule, "shouldMatch", true);
             setRuleProperty(rule, "pattern", Pattern.compile("/\\*.*\\*/"));
-            String code = """
-                    /*
-                     * comment
-                     */
-                    class T { }""";
+            String code = "/*\n"
+                    + " * comment\n"
+                    + " */\n"
+                    + "class T { }";
             assertNoViolations(code);
         }
 
@@ -262,11 +255,10 @@ class RegexRuleTest {
             setRuleProperty(rule, "dotall", false);
             setRuleProperty(rule, "shouldMatch", true);
             setRuleProperty(rule, "pattern", Pattern.compile("/\\*.*\\*/"));
-            String code = """
-                    /*
-                     * comment
-                     */
-                    class T { }""";
+            String code = "/*\n"
+                    + " * comment\n"
+                    + " */\n"
+                    + "class T { }";
             assertHasViolation(code, "Required pattern not found");
         }
     }
@@ -283,51 +275,46 @@ class RegexRuleTest {
 
         @Test
         void detectsYourUsername() {
-            String code = """
-                    /**
-                     * @author your username
-                     */
-                    class T { }""";
+            String code = "/**\n"
+                    + " * @author your username\n"
+                    + " */\n"
+                    + "class T { }";
             assertHasViolation(code, "This is a placeholder and should be replaced.");
         }
 
         @Test
         void detectsYourName() {
-            String code = """
-                    /**
-                     * @author your name
-                     */
-                    class T { }""";
+            String code = "/**\n"
+                    + " * @author your name\n"
+                    + " */\n"
+                    + "class T { }";
             assertHasViolation(code, "This is a placeholder and should be replaced.");
         }
 
         @Test
         void detectsYourPid() {
-            String code = """
-                    /**
-                     * @author your pid
-                     */
-                    class T { }""";
+            String code = "/**\n"
+                    + " * @author your pid\n"
+                    + " */\n"
+                    + "class T { }";
             assertHasViolation(code, "This is a placeholder and should be replaced.");
         }
 
         @Test
         void detectsYourHyphenUsername() {
-            String code = """
-                    /**
-                     * @author your-username
-                     */
-                    class T { }""";
+            String code = "/**\n"
+                    + " * @author your-username\n"
+                    + " */\n"
+                    + "class T { }";
             assertHasViolation(code, "This is a placeholder and should be replaced.");
         }
 
         @Test
         void allowsRealAuthor() {
-            String code = """
-                    /**
-                     * @author Jane Doe
-                     */
-                    class T { }""";
+            String code = "/**\n"
+                    + " * @author Jane Doe\n"
+                    + " */\n"
+                    + "class T { }";
             assertNoViolations(code);
         }
 

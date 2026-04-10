@@ -72,34 +72,31 @@ class SimpleIndentationRuleTest {
     class CorrectIndentation {
         @Test
         void singleLevelClass() {
-            String code = """
-                    class T {
-                        int x;
-                    }""";
+            String code = "class T {\n"
+                    + "    int x;\n"
+                    + "}";
             assertNoViolations(code);
         }
 
         @Test
         void nestedBlocks() {
-            String code = """
-                    class T {
-                        void m() {
-                            int x = 1;
-                        }
-                    }""";
+            String code = "class T {\n"
+                    + "    void m() {\n"
+                    + "        int x = 1;\n"
+                    + "    }\n"
+                    + "}";
             assertNoViolations(code);
         }
 
         @Test
         void deepNesting() {
-            String code = """
-                    class T {
-                        void m() {
-                            if (true) {
-                                int x = 1;
-                            }
-                        }
-                    }""";
+            String code = "class T {\n"
+                    + "    void m() {\n"
+                    + "        if (true) {\n"
+                    + "            int x = 1;\n"
+                    + "        }\n"
+                    + "    }\n"
+                    + "}";
             assertNoViolations(code);
         }
 
@@ -110,22 +107,20 @@ class SimpleIndentationRuleTest {
 
         @Test
         void blankLinesIgnored() {
-            String code = """
-                    class T {
-                    
-                        int x;
-                    
-                    }""";
+            String code = "class T {\n"
+                    + "\n"
+                    + "    int x;\n"
+                    + "\n"
+                    + "}";
             assertNoViolations(code);
         }
 
         @Test
         void closingBraceAtCorrectLevel() {
-            String code = """
-                    class T {
-                        void m() {
-                        }
-                    }""";
+            String code = "class T {\n"
+                    + "    void m() {\n"
+                    + "    }\n"
+                    + "}";
             assertNoViolations(code);
         }
     }
@@ -134,29 +129,26 @@ class SimpleIndentationRuleTest {
     class IncorrectIndentation {
         @Test
         void tooManySpaces() {
-            String code = """
-                    class T {
-                            int x;
-                    }""";
+            String code = "class T {\n"
+                    + "        int x;\n"
+                    + "}";
             assertHasViolation(code, "indented incorrectly");
         }
 
         @Test
         void tooFewSpaces() {
-            String code = """
-                    class T {
-                      int x;
-                    }""";
+            String code = "class T {\n"
+                    + "  int x;\n"
+                    + "}";
             assertHasViolation(code, "indented incorrectly");
         }
 
         @Test
         void noIndentInBlock() {
-            String code = """
-                    class T {
-                    void m() {
-                    }
-                    }""";
+            String code = "class T {\n"
+                    + "void m() {\n"
+                    + "}\n"
+                    + "}";
             assertHasViolation(code, "indented incorrectly");
         }
     }
@@ -193,30 +185,27 @@ class SimpleIndentationRuleTest {
 
         @Test
         void correctTwoSpaceIndent() {
-            String code = """
-                    class T {
-                      int x;
-                    }""";
+            String code = "class T {\n"
+                    + "  int x;\n"
+                    + "}";
             assertNoViolations(code);
         }
 
         @Test
         void fourSpacesWithTwoSizeIndent() {
-            String code = """
-                    class T {
-                        int x;
-                    }""";
+            String code = "class T {\n"
+                    + "    int x;\n"
+                    + "}";
             assertHasViolation(code, "indented incorrectly");
         }
 
         @Test
         void nestedTwoSpaceIndent() {
-            String code = """
-                    class T {
-                      void m() {
-                        int x = 1;
-                      }
-                    }""";
+            String code = "class T {\n"
+                    + "  void m() {\n"
+                    + "    int x = 1;\n"
+                    + "  }\n"
+                    + "}";
             assertNoViolations(code);
         }
     }
@@ -242,67 +231,61 @@ class SimpleIndentationRuleTest {
     class BlockComments {
         @Test
         void blockCommentDoesNotAffectDepth() {
-            String code = """
-                    class T {
-                        /* { not a real brace } */
-                        int x;
-                    }""";
+            String code = "class T {\n"
+                    + "    /* { not a real brace } */\n"
+                    + "    int x;\n"
+                    + "}";
             assertNoViolations(code);
         }
 
         @Test
         void multiLineBlockComment() {
-            String code = """
-                    class T {
-                        /*
-                        * comment
-                        */
-                        int x;
-                    }""";
+            String code = "class T {\n"
+                    + "    /*\n"
+                    + "    * comment\n"
+                    + "    */\n"
+                    + "    int x;\n"
+                    + "}";
             assertNoViolations(code);
         }
 
         @Test
         void badlyIndentedBlockCommentIgnored() {
-            String code = """
-                    class T {
-                    /* misindented block comment */
-                        int x;
-                    }""";
+            String code = "class T {\n"
+                    + "/* misindented block comment */\n"
+                    + "    int x;\n"
+                    + "}";
             assertNoViolations(code);
         }
 
         @Test
         void badlyIndentedMultiLineBlockCommentIgnored() {
-            String code = """
-                    class T {
-                      /*
-                          * inside block
-                      */
-                        int x;
-                    }""";
+            String code = "class T {\n"
+                    + "  /*\n"
+                    + "      * inside block\n"
+                    + "  */\n"
+                    + "    int x;\n"
+                    + "}";
             assertNoViolations(code);
         }
 
         @Test
         void badlyIndentedLineCommentIgnored() {
-            String code = """
-                    class T {
-                    // misindented line comment
-                        int x;
-                    }""";
+            String code = "class T {\n"
+                    + "// misindented line comment\n"
+                    + "    int x;\n"
+                    + "}";
             assertNoViolations(code);
         }
 
         @Test
         void badlyIndentedJavadocIgnored() {
-            String code = """
-                    class T {
-                    /**
-                     * Javadoc
-                     */
-                        int x;
-                    }""";
+            String code = "class T {\n"
+                    + "/**\n"
+                    + " * Javadoc\n"
+                    + " */\n"
+                    + "    int x;\n"
+                    + "}";
             assertNoViolations(code);
         }
     }
@@ -311,10 +294,9 @@ class SimpleIndentationRuleTest {
     class StringLiterals {
         @Test
         void bracesInStringLiteralIgnored() {
-            String code = """
-                    class T {
-                        String s = "{ }";
-                    }""";
+            String code = "class T {\n"
+                    + "    String s = \"{ }\";\n"
+                    + "}";
             assertNoViolations(code);
         }
     }
@@ -323,14 +305,13 @@ class SimpleIndentationRuleTest {
     class Parentheses {
         @Test
         void parenNesting() {
-            String code = """
-                    class T {
-                        void m(
-                            int x,
-                            int y
-                        ) {
-                        }
-                    }""";
+            String code = "class T {\n"
+                    + "    void m(\n"
+                    + "        int x,\n"
+                    + "        int y\n"
+                    + "    ) {\n"
+                    + "    }\n"
+                    + "}";
             assertNoViolations(code);
         }
     }
@@ -339,226 +320,212 @@ class SimpleIndentationRuleTest {
     class SwitchCaseIndentation {
         @Test
         void correctSwitchCaseIndentation() {
-            String code = """
-                    class T {
-                        void m(int x) {
-                            switch (x) {
-                                case 1:
-                                    int y = 1;
-                                    break;
-                                case 2:
-                                    int z = 2;
-                                    break;
-                                default:
-                                    break;
-                            }
-                        }
-                    }""";
+            String code = "class T {\n"
+                    + "    void m(int x) {\n"
+                    + "        switch (x) {\n"
+                    + "            case 1:\n"
+                    + "                int y = 1;\n"
+                    + "                break;\n"
+                    + "            case 2:\n"
+                    + "                int z = 2;\n"
+                    + "                break;\n"
+                    + "            default:\n"
+                    + "                break;\n"
+                    + "        }\n"
+                    + "    }\n"
+                    + "}";
             assertNoViolations(code);
         }
 
         @Test
         void caseBodyAtSameLevelAsLabel() {
-            String code = """
-                    class T {
-                        void m(int x) {
-                            switch (x) {
-                                case 1:
-                                int y = 1;
-                                break;
-                            }
-                        }
-                    }""";
+            String code = "class T {\n"
+                    + "    void m(int x) {\n"
+                    + "        switch (x) {\n"
+                    + "            case 1:\n"
+                    + "            int y = 1;\n"
+                    + "            break;\n"
+                    + "        }\n"
+                    + "    }\n"
+                    + "}";
             assertHasViolation(code, "indented incorrectly");
         }
 
         @Test
         void defaultLabelBodyIndented() {
-            String code = """
-                    class T {
-                        void m(int x) {
-                            switch (x) {
-                                default:
-                                    int y = 0;
-                                    break;
-                            }
-                        }
-                    }""";
+            String code = "class T {\n"
+                    + "    void m(int x) {\n"
+                    + "        switch (x) {\n"
+                    + "            default:\n"
+                    + "                int y = 0;\n"
+                    + "                break;\n"
+                    + "        }\n"
+                    + "    }\n"
+                    + "}";
             assertNoViolations(code);
         }
 
         @Test
         void multipleCaseLabelsFallThrough() {
-            String code = """
-                    class T {
-                        void m(int x) {
-                            switch (x) {
-                                case 1:
-                                case 2:
-                                case 3:
-                                    int y = 1;
-                                    break;
-                            }
-                        }
-                    }""";
+            String code = "class T {\n"
+                    + "    void m(int x) {\n"
+                    + "        switch (x) {\n"
+                    + "            case 1:\n"
+                    + "            case 2:\n"
+                    + "            case 3:\n"
+                    + "                int y = 1;\n"
+                    + "                break;\n"
+                    + "        }\n"
+                    + "    }\n"
+                    + "}";
             assertNoViolations(code);
         }
 
         @Test
         void arrowCaseNoExtraIndent() {
-            String code = """
-                    class T {
-                        void m(int x) {
-                            switch (x) {
-                                case 1 -> System.out.println(1);
-                                case 2 -> System.out.println(2);
-                                default -> System.out.println(0);
-                            }
-                        }
-                    }""";
+            String code = "class T {\n"
+                    + "    void m(int x) {\n"
+                    + "        switch (x) {\n"
+                    + "            case 1 -> System.out.println(1);\n"
+                    + "            case 2 -> System.out.println(2);\n"
+                    + "            default -> System.out.println(0);\n"
+                    + "        }\n"
+                    + "    }\n"
+                    + "}";
             assertNoViolations(code);
         }
 
         @Test
         void arrowCaseWithBlock() {
-            String code = """
-                    class T {
-                        void m(int x) {
-                            switch (x) {
-                                case 1 -> {
-                                    System.out.println(1);
-                                }
-                                default -> {
-                                    System.out.println(0);
-                                }
-                            }
-                        }
-                    }""";
+            String code = "class T {\n"
+                    + "    void m(int x) {\n"
+                    + "        switch (x) {\n"
+                    + "            case 1 -> {\n"
+                    + "                System.out.println(1);\n"
+                    + "            }\n"
+                    + "            default -> {\n"
+                    + "                System.out.println(0);\n"
+                    + "            }\n"
+                    + "        }\n"
+                    + "    }\n"
+                    + "}";
             assertNoViolations(code);
         }
 
         @Test
         void nestedSwitchStatements() {
-            String code = """
-                    class T {
-                        void m(int x, int y) {
-                            switch (x) {
-                                case 1:
-                                    switch (y) {
-                                        case 10:
-                                            int z = 10;
-                                            break;
-                                        default:
-                                            break;
-                                    }
-                                    break;
-                                case 2:
-                                    break;
-                            }
-                        }
-                    }""";
+            String code = "class T {\n"
+                    + "    void m(int x, int y) {\n"
+                    + "        switch (x) {\n"
+                    + "            case 1:\n"
+                    + "                switch (y) {\n"
+                    + "                    case 10:\n"
+                    + "                        int z = 10;\n"
+                    + "                        break;\n"
+                    + "                    default:\n"
+                    + "                        break;\n"
+                    + "                }\n"
+                    + "                break;\n"
+                    + "            case 2:\n"
+                    + "                break;\n"
+                    + "        }\n"
+                    + "    }\n"
+                    + "}";
             assertNoViolations(code);
         }
 
         @Test
         void nestedSwitchIncorrectInnerIndent() {
-            String code = """
-                    class T {
-                        void m(int x, int y) {
-                            switch (x) {
-                                case 1:
-                                    switch (y) {
-                                        case 10:
-                                        int z = 10;
-                                        break;
-                                    }
-                                    break;
-                            }
-                        }
-                    }""";
+            String code = "class T {\n"
+                    + "    void m(int x, int y) {\n"
+                    + "        switch (x) {\n"
+                    + "            case 1:\n"
+                    + "                switch (y) {\n"
+                    + "                    case 10:\n"
+                    + "                    int z = 10;\n"
+                    + "                    break;\n"
+                    + "                }\n"
+                    + "                break;\n"
+                    + "        }\n"
+                    + "    }\n"
+                    + "}";
             assertHasViolation(code, "indented incorrectly");
         }
 
         @Test
         void switchWithCaseContainingBlock() {
-            String code = """
-                    class T {
-                        void m(int x) {
-                            switch (x) {
-                                case 1: {
-                                    int y = 1;
-                                    break;
-                                }
-                                default:
-                                    break;
-                            }
-                        }
-                    }""";
+            String code = "class T {\n"
+                    + "    void m(int x) {\n"
+                    + "        switch (x) {\n"
+                    + "            case 1: {\n"
+                    + "                int y = 1;\n"
+                    + "                break;\n"
+                    + "            }\n"
+                    + "            default:\n"
+                    + "                break;\n"
+                    + "        }\n"
+                    + "    }\n"
+                    + "}";
             assertNoViolations(code);
         }
 
         @Test
         void colonInTernaryNotConfused() {
-            String code = """
-                    class T {
-                        void m(int x) {
-                            int y = x > 0 ? 1 : 0;
-                        }
-                    }""";
+            String code = "class T {\n"
+                    + "    void m(int x) {\n"
+                    + "        int y = x > 0 ? 1 : 0;\n"
+                    + "    }\n"
+                    + "}";
             assertNoViolations(code);
         }
 
         @Test
         void colonInEnhancedForNotConfused() {
-            String code = """
-                    class T {
-                        void m(int[] arr) {
-                            for (int x : arr) {
-                                System.out.println(x);
-                            }
-                        }
-                    }""";
+            String code = "class T {\n"
+                    + "    void m(int[] arr) {\n"
+                    + "        for (int x : arr) {\n"
+                    + "            System.out.println(x);\n"
+                    + "        }\n"
+                    + "    }\n"
+                    + "}";
             assertNoViolations(code);
         }
 
         @Test
         void colonInMethodReferenceNotConfused() {
-            String code = """
-                    class T {
-                        void m() {
-                            Runnable r = System.out::println;
-                        }
-                    }""";
+            String code = "class T {\n"
+                    + "    void m() {\n"
+                    + "        Runnable r = System.out::println;\n"
+                    + "    }\n"
+                    + "}";
             assertNoViolations(code);
         }
 
         @Test
         void switchAfterCodeInMethod() {
-            String code = """
-                    class T {
-                        void m(int x) {
-                            int a = 1;
-                            switch (x) {
-                                case 1:
-                                    break;
-                            }
-                            int b = 2;
-                        }
-                    }""";
+            String code = "class T {\n"
+                    + "    void m(int x) {\n"
+                    + "        int a = 1;\n"
+                    + "        switch (x) {\n"
+                    + "            case 1:\n"
+                    + "                break;\n"
+                    + "        }\n"
+                    + "        int b = 2;\n"
+                    + "    }\n"
+                    + "}";
             assertNoViolations(code);
         }
 
         @Test
         void caseBodyOverIndented() {
-            String code = """
-                    class T {
-                        void m(int x) {
-                            switch (x) {
-                                case 1:
-                                        break;
-                            }
-                        }
-                    }""";
+            String code = "class T {\n"
+                    + "    void m(int x) {\n"
+                    + "        switch (x) {\n"
+                    + "            case 1:\n"
+                    + "                    break;\n"
+                    + "        }\n"
+                    + "    }\n"
+                    + "}";
             assertHasViolation(code, "indented incorrectly");
         }
     }

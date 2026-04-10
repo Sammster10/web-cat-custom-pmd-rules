@@ -72,39 +72,36 @@ class SimplifiableTestAssertionRuleTest {
     class NoViolations {
         @Test
         void properAssertEquals() {
-            assertNoViolations("""
-                    import static org.junit.jupiter.api.Assertions.assertEquals;
-                    import org.junit.jupiter.api.Test;
-                    class MyTest {
-                        @Test
-                        void testFoo() {
-                            assertEquals(1, 1);
-                        }
-                    }""");
+            assertNoViolations("import static org.junit.jupiter.api.Assertions.assertEquals;\n"
+                    + "import org.junit.jupiter.api.Test;\n"
+                    + "class MyTest {\n"
+                    + "    @Test\n"
+                    + "    void testFoo() {\n"
+                    + "        assertEquals(1, 1);\n"
+                    + "    }\n"
+                    + "}");
         }
 
         @Test
         void properAssertTrue() {
-            assertNoViolations("""
-                    import static org.junit.jupiter.api.Assertions.assertTrue;
-                    import org.junit.jupiter.api.Test;
-                    class MyTest {
-                        @Test
-                        void testFoo() {
-                            assertTrue(someCondition());
-                        }
-                        boolean someCondition() { return true; }
-                    }""");
+            assertNoViolations("import static org.junit.jupiter.api.Assertions.assertTrue;\n"
+                    + "import org.junit.jupiter.api.Test;\n"
+                    + "class MyTest {\n"
+                    + "    @Test\n"
+                    + "    void testFoo() {\n"
+                    + "        assertTrue(someCondition());\n"
+                    + "    }\n"
+                    + "    boolean someCondition() { return true; }\n"
+                    + "}");
         }
 
         @Test
         void nonTestCode() {
-            assertNoViolations("""
-                    class Foo {
-                        void doStuff() {
-                            boolean x = (1 == 1);
-                        }
-                    }""");
+            assertNoViolations("class Foo {\n"
+                    + "    void doStuff() {\n"
+                    + "        boolean x = (1 == 1);\n"
+                    + "    }\n"
+                    + "}");
         }
     }
 
@@ -112,42 +109,39 @@ class SimplifiableTestAssertionRuleTest {
     class AssertTrueWithEquality {
         @Test
         void assertTrueWithEqualityOnPrimitives() {
-            assertHasViolation("""
-                    import static org.junit.jupiter.api.Assertions.assertTrue;
-                    import org.junit.jupiter.api.Test;
-                    class MyTest {
-                        @Test
-                        void testFoo() {
-                            assertTrue(1 == 1);
-                        }
-                    }""", "assertEquals");
+            assertHasViolation("import static org.junit.jupiter.api.Assertions.assertTrue;\n"
+                    + "import org.junit.jupiter.api.Test;\n"
+                    + "class MyTest {\n"
+                    + "    @Test\n"
+                    + "    void testFoo() {\n"
+                    + "        assertTrue(1 == 1);\n"
+                    + "    }\n"
+                    + "}", "assertEquals");
         }
 
         @Test
         void assertTrueWithNullCheck() {
-            assertHasViolation("""
-                    import static org.junit.jupiter.api.Assertions.assertTrue;
-                    import org.junit.jupiter.api.Test;
-                    class MyTest {
-                        @Test
-                        void testFoo() {
-                            Object o = null;
-                            assertTrue(o == null);
-                        }
-                    }""", "assertNull");
+            assertHasViolation("import static org.junit.jupiter.api.Assertions.assertTrue;\n"
+                    + "import org.junit.jupiter.api.Test;\n"
+                    + "class MyTest {\n"
+                    + "    @Test\n"
+                    + "    void testFoo() {\n"
+                    + "        Object o = null;\n"
+                    + "        assertTrue(o == null);\n"
+                    + "    }\n"
+                    + "}", "assertNull");
         }
 
         @Test
         void assertTrueWithInequalityOnPrimitives() {
-            assertHasViolation("""
-                    import static org.junit.jupiter.api.Assertions.assertTrue;
-                    import org.junit.jupiter.api.Test;
-                    class MyTest {
-                        @Test
-                        void testFoo() {
-                            assertTrue(1 != 2);
-                        }
-                    }""", "assertNotEquals");
+            assertHasViolation("import static org.junit.jupiter.api.Assertions.assertTrue;\n"
+                    + "import org.junit.jupiter.api.Test;\n"
+                    + "class MyTest {\n"
+                    + "    @Test\n"
+                    + "    void testFoo() {\n"
+                    + "        assertTrue(1 != 2);\n"
+                    + "    }\n"
+                    + "}", "assertNotEquals");
         }
     }
 
@@ -155,28 +149,26 @@ class SimplifiableTestAssertionRuleTest {
     class AssertTrueWithNegation {
         @Test
         void assertTrueWithBooleanNegation() {
-            assertHasViolation("""
-                    import static org.junit.jupiter.api.Assertions.assertTrue;
-                    import org.junit.jupiter.api.Test;
-                    class MyTest {
-                        @Test
-                        void testFoo() {
-                            assertTrue(!true);
-                        }
-                    }""", "assertFalse");
+            assertHasViolation("import static org.junit.jupiter.api.Assertions.assertTrue;\n"
+                    + "import org.junit.jupiter.api.Test;\n"
+                    + "class MyTest {\n"
+                    + "    @Test\n"
+                    + "    void testFoo() {\n"
+                    + "        assertTrue(!true);\n"
+                    + "    }\n"
+                    + "}", "assertFalse");
         }
 
         @Test
         void assertFalseWithBooleanNegation() {
-            assertHasViolation("""
-                    import static org.junit.jupiter.api.Assertions.assertFalse;
-                    import org.junit.jupiter.api.Test;
-                    class MyTest {
-                        @Test
-                        void testFoo() {
-                            assertFalse(!true);
-                        }
-                    }""", "assertTrue");
+            assertHasViolation("import static org.junit.jupiter.api.Assertions.assertFalse;\n"
+                    + "import org.junit.jupiter.api.Test;\n"
+                    + "class MyTest {\n"
+                    + "    @Test\n"
+                    + "    void testFoo() {\n"
+                    + "        assertFalse(!true);\n"
+                    + "    }\n"
+                    + "}", "assertTrue");
         }
     }
 
@@ -184,32 +176,30 @@ class SimplifiableTestAssertionRuleTest {
     class AssertTrueWithObjectEquals {
         @Test
         void assertTrueWithEqualsCall() {
-            assertHasViolation("""
-                    import static org.junit.jupiter.api.Assertions.assertTrue;
-                    import org.junit.jupiter.api.Test;
-                    class MyTest {
-                        @Test
-                        void testFoo() {
-                            String a = "a";
-                            String b = "a";
-                            assertTrue(a.equals(b));
-                        }
-                    }""", "assertEquals");
+            assertHasViolation("import static org.junit.jupiter.api.Assertions.assertTrue;\n"
+                    + "import org.junit.jupiter.api.Test;\n"
+                    + "class MyTest {\n"
+                    + "    @Test\n"
+                    + "    void testFoo() {\n"
+                    + "        String a = \"a\";\n"
+                    + "        String b = \"a\";\n"
+                    + "        assertTrue(a.equals(b));\n"
+                    + "    }\n"
+                    + "}", "assertEquals");
         }
 
         @Test
         void assertTrueWithNegatedEqualsCall() {
-            assertHasViolation("""
-                    import static org.junit.jupiter.api.Assertions.assertTrue;
-                    import org.junit.jupiter.api.Test;
-                    class MyTest {
-                        @Test
-                        void testFoo() {
-                            String a = "a";
-                            String b = "b";
-                            assertTrue(!a.equals(b));
-                        }
-                    }""", "assertNotEquals");
+            assertHasViolation("import static org.junit.jupiter.api.Assertions.assertTrue;\n"
+                    + "import org.junit.jupiter.api.Test;\n"
+                    + "class MyTest {\n"
+                    + "    @Test\n"
+                    + "    void testFoo() {\n"
+                    + "        String a = \"a\";\n"
+                    + "        String b = \"b\";\n"
+                    + "        assertTrue(!a.equals(b));\n"
+                    + "    }\n"
+                    + "}", "assertNotEquals");
         }
     }
 
@@ -217,41 +207,38 @@ class SimplifiableTestAssertionRuleTest {
     class AssertEqualsWithBoolean {
         @Test
         void assertEqualsWithTrueLiteral() {
-            assertHasViolation("""
-                    import static org.junit.jupiter.api.Assertions.assertEquals;
-                    import org.junit.jupiter.api.Test;
-                    class MyTest {
-                        @Test
-                        void testFoo() {
-                            assertEquals(true, 1 > 0);
-                        }
-                    }""", "assertTrue");
+            assertHasViolation("import static org.junit.jupiter.api.Assertions.assertEquals;\n"
+                    + "import org.junit.jupiter.api.Test;\n"
+                    + "class MyTest {\n"
+                    + "    @Test\n"
+                    + "    void testFoo() {\n"
+                    + "        assertEquals(true, 1 > 0);\n"
+                    + "    }\n"
+                    + "}", "assertTrue");
         }
 
         @Test
         void assertEqualsWithFalseLiteral() {
-            assertHasViolation("""
-                    import static org.junit.jupiter.api.Assertions.assertEquals;
-                    import org.junit.jupiter.api.Test;
-                    class MyTest {
-                        @Test
-                        void testFoo() {
-                            assertEquals(false, 1 > 0);
-                        }
-                    }""", "assertFalse");
+            assertHasViolation("import static org.junit.jupiter.api.Assertions.assertEquals;\n"
+                    + "import org.junit.jupiter.api.Test;\n"
+                    + "class MyTest {\n"
+                    + "    @Test\n"
+                    + "    void testFoo() {\n"
+                    + "        assertEquals(false, 1 > 0);\n"
+                    + "    }\n"
+                    + "}", "assertFalse");
         }
 
         @Test
         void assertNotEqualsWithTrueLiteral() {
-            assertHasViolation("""
-                    import static org.junit.jupiter.api.Assertions.assertNotEquals;
-                    import org.junit.jupiter.api.Test;
-                    class MyTest {
-                        @Test
-                        void testFoo() {
-                            assertNotEquals(true, 1 > 0);
-                        }
-                    }""", "assertFalse");
+            assertHasViolation("import static org.junit.jupiter.api.Assertions.assertNotEquals;\n"
+                    + "import org.junit.jupiter.api.Test;\n"
+                    + "class MyTest {\n"
+                    + "    @Test\n"
+                    + "    void testFoo() {\n"
+                    + "        assertNotEquals(true, 1 > 0);\n"
+                    + "    }\n"
+                    + "}", "assertFalse");
         }
     }
 
@@ -259,29 +246,27 @@ class SimplifiableTestAssertionRuleTest {
     class AssertFalseWithEquality {
         @Test
         void assertFalseWithEqualityOnPrimitives() {
-            assertHasViolation("""
-                    import static org.junit.jupiter.api.Assertions.assertFalse;
-                    import org.junit.jupiter.api.Test;
-                    class MyTest {
-                        @Test
-                        void testFoo() {
-                            assertFalse(1 == 1);
-                        }
-                    }""", "assertNotEquals");
+            assertHasViolation("import static org.junit.jupiter.api.Assertions.assertFalse;\n"
+                    + "import org.junit.jupiter.api.Test;\n"
+                    + "class MyTest {\n"
+                    + "    @Test\n"
+                    + "    void testFoo() {\n"
+                    + "        assertFalse(1 == 1);\n"
+                    + "    }\n"
+                    + "}", "assertNotEquals");
         }
 
         @Test
         void assertFalseWithNotNullCheck() {
-            assertHasViolation("""
-                    import static org.junit.jupiter.api.Assertions.assertFalse;
-                    import org.junit.jupiter.api.Test;
-                    class MyTest {
-                        @Test
-                        void testFoo() {
-                            Object o = null;
-                            assertFalse(o == null);
-                        }
-                    }""", "assertNonNull");
+            assertHasViolation("import static org.junit.jupiter.api.Assertions.assertFalse;\n"
+                    + "import org.junit.jupiter.api.Test;\n"
+                    + "class MyTest {\n"
+                    + "    @Test\n"
+                    + "    void testFoo() {\n"
+                    + "        Object o = null;\n"
+                    + "        assertFalse(o == null);\n"
+                    + "    }\n"
+                    + "}", "assertNonNull");
         }
     }
 }

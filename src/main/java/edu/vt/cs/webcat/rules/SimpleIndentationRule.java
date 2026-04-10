@@ -124,10 +124,10 @@ public class SimpleIndentationRule extends AbstractRule {
 
             if (leadingClosers > 0) {
                 while (!switchStack.isEmpty()
-                        && depthBeforeClosers < switchStack.peek().braceDepth()) {
+                        && depthBeforeClosers < switchStack.peek().getBraceDepth()) {
                     IndentationUtils.SwitchContext restored = switchStack.pop();
-                    frozenBonus = restored.previousFrozenBonus();
-                    activeCaseBonus = restored.previousActiveCaseBonus();
+                    frozenBonus = restored.getPreviousFrozenBonus();
+                    activeCaseBonus = restored.getPreviousActiveCaseBonus();
                 }
             }
 
@@ -152,28 +152,28 @@ public class SimpleIndentationRule extends AbstractRule {
 
             if (isCaseLabel && !IndentationUtils.isArrowCase(strippedLine)) {
                 IndentationUtils.DepthDelta caseDelta = IndentationUtils.computeDepthDelta(strippedLine);
-                activeCaseBonus = caseDelta.netChange() <= 0 ? 1 : 0;
+                activeCaseBonus = caseDelta.getNetChange() <= 0 ? 1 : 0;
             }
 
             if (!lineIsComment && IndentationUtils.SWITCH_OPEN_PATTERN.matcher(strippedLine).find()) {
                 IndentationUtils.DepthDelta preSwitchDelta = IndentationUtils.computeDepthDelta(strippedLine);
-                int switchBraceDepth = currentDepth + preSwitchDelta.netChange();
+                int switchBraceDepth = currentDepth + preSwitchDelta.getNetChange();
                 switchStack.push(new IndentationUtils.SwitchContext(switchBraceDepth, frozenBonus, activeCaseBonus));
                 frozenBonus = frozenBonus + activeCaseBonus;
                 activeCaseBonus = 0;
             }
 
             IndentationUtils.DepthDelta delta = IndentationUtils.computeDepthDelta(strippedLine);
-            int newDepth = Math.max(0, currentDepth + delta.netChange());
+            int newDepth = Math.max(0, currentDepth + delta.getNetChange());
 
-            while (!switchStack.isEmpty() && newDepth <= switchStack.peek().braceDepth() - 1) {
+            while (!switchStack.isEmpty() && newDepth <= switchStack.peek().getBraceDepth() - 1) {
                 IndentationUtils.SwitchContext restored = switchStack.pop();
-                frozenBonus = restored.previousFrozenBonus();
-                activeCaseBonus = restored.previousActiveCaseBonus();
+                frozenBonus = restored.getPreviousFrozenBonus();
+                activeCaseBonus = restored.getPreviousActiveCaseBonus();
             }
 
             currentDepth = newDepth;
-            insideBlockComment = delta.endsInsideBlockComment();
+            insideBlockComment = delta.getEndsInsideBlockComment();
 
             offset += line.length() + 1;
         }
