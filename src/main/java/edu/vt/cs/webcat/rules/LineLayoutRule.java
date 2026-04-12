@@ -1,10 +1,6 @@
 package edu.vt.cs.webcat.rules;
 
-import net.sourceforge.pmd.lang.ast.GenericToken;
 import net.sourceforge.pmd.lang.ast.impl.javacc.JavaccToken;
-import net.sourceforge.pmd.lang.document.Chars;
-import net.sourceforge.pmd.lang.document.TextDocument;
-import net.sourceforge.pmd.lang.document.TextRegion;
 import net.sourceforge.pmd.lang.java.ast.*;
 import net.sourceforge.pmd.lang.java.rule.AbstractJavaRulechainRule;
 import net.sourceforge.pmd.properties.PropertyDescriptor;
@@ -15,38 +11,16 @@ import java.util.*;
 
 public class LineLayoutRule extends AbstractJavaRulechainRule {
 
-    private static final PropertyDescriptor<String> RCURLY_MESSAGE =
-            PropertyFactory.stringProperty("rcurlyMessage")
-                    .desc("Message reported when a right curly brace is not alone on its line.")
-                    .defaultValue("Right curly brace must be alone on its line.")
-                    .build();
-
-    private static final PropertyDescriptor<String> ONE_STMT_MESSAGE =
-            PropertyFactory.stringProperty("oneStatementMessage")
-                    .desc("Message reported when multiple statements occupy the same line.")
+    private static final PropertyDescriptor<String> MESSAGE =
+            PropertyFactory.stringProperty("message")
+                    .desc("Message when multiple statements appear on one line.")
                     .defaultValue("Only one statement is allowed per line.")
                     .build();
-
-    private static final PropertyDescriptor<Boolean> CHECK_RCURLY =
-            PropertyFactory.booleanProperty("checkRCurly")
-                    .desc("Enable the right-curly-brace-alone-on-line check.")
-                    .defaultValue(true)
-                    .build();
-
-    private static final PropertyDescriptor<Boolean> CHECK_ONE_STMT =
-            PropertyFactory.booleanProperty("checkOneStatement")
-                    .desc("Enable the one-statement-per-line check.")
-                    .defaultValue(true)
-                    .build();
-
     private final Set<Integer> reportedLines = new HashSet<>();
 
     public LineLayoutRule() {
         super(ASTCompilationUnit.class);
-        definePropertyDescriptor(RCURLY_MESSAGE);
-        definePropertyDescriptor(ONE_STMT_MESSAGE);
-        definePropertyDescriptor(CHECK_RCURLY);
-        definePropertyDescriptor(CHECK_ONE_STMT);
+        definePropertyDescriptor(MESSAGE);
     }
 
     @Override
@@ -54,87 +28,14 @@ public class LineLayoutRule extends AbstractJavaRulechainRule {
         RuleContext ctx = asCtx(data);
         reportedLines.clear();
 
-        if (getProperty(CHECK_RCURLY)) {
-            checkRightCurlyAlone(node, ctx);
-        }
-        if (getProperty(CHECK_ONE_STMT)) {
-            checkOneStatementPerLine(node, ctx);
-        }
+        checkOneStatementPerLine(node, ctx);
 
         return data;
     }
 
-    private void checkRightCurlyAlone(ASTCompilationUnit node, RuleContext ctx) {
-        String message = getProperty(RCURLY_MESSAGE);
-        List<JavaccToken> tokens = collectTokens(node);
-        TextDocument textDoc = node.getTextDocument();
-
-        for (int i = 0; i < tokens.size(); i++) {
-            JavaccToken token = tokens.get(i);
-            if (token.kind != JavaTokenKinds.RBRACE) {
-                continue;
-            }
-
-            int braceLine = token.getReportLocation().getStartLine();
-            boolean hasOtherContent = false;
-
-            for (int j = i - 1; j >= 0; j--) {
-                JavaccToken prev = tokens.get(j);
-                if (lineOf(prev) != braceLine) {
-                    break;
-                }
-                hasOtherContent = true;
-                break;
-            }
-
-            if (!hasOtherContent) {
-                for (int j = i + 1; j < tokens.size(); j++) {
-                    JavaccToken next = tokens.get(j);
-                    if (next.isEof() || lineOf(next) != braceLine) {
-                        break;
-                    }
-                    hasOtherContent = true;
-                    break;
-                }
-            }
-
-            if (!hasOtherContent) {
-                hasOtherContent = hasCommentOnSameLine(token, tokens, i, textDoc);
-            }
-
-            if (hasOtherContent) {
-                reportOnce(ctx, node, token, braceLine, message);
-            }
-        }
-    }
-
-    private boolean hasCommentOnSameLine(JavaccToken braceToken, List<JavaccToken> tokens,
-                                         int braceIndex, TextDocument textDoc) {
-        int braceEnd = braceToken.getRegion().getEndOffset();
-        int searchEnd;
-
-        if (braceIndex + 1 < tokens.size()) {
-            JavaccToken next = tokens.get(braceIndex + 1);
-            searchEnd = next.getRegion().getStartOffset();
-        } else {
-            searchEnd = textDoc.getLength();
-        }
-
-        if (searchEnd <= braceEnd) {
-            return false;
-        }
-
-        Chars gap = textDoc.sliceOriginalText(TextRegion.fromBothOffsets(braceEnd, searchEnd));
-        String gapStr = gap.toString();
-
-        int newlinePos = gapStr.indexOf('\n');
-        String sameLineGap = newlinePos >= 0 ? gapStr.substring(0, newlinePos) : gapStr;
-
-        return sameLineGap.contains("//") || sameLineGap.contains("/*");
-    }
 
     private void checkOneStatementPerLine(ASTCompilationUnit node, RuleContext ctx) {
-        String message = getProperty(ONE_STMT_MESSAGE);
+        String message = getProperty(MESSAGE);
         Set<Integer> forHeaderLines = collectForHeaderLines(node);
 
         Map<Integer, List<JavaNode>> lineToStatements = new LinkedHashMap<>();
@@ -254,18 +155,6 @@ public class LineLayoutRule extends AbstractJavaRulechainRule {
             return ((ASTDoStatement) stmt).getBody();
         }
         return null;
-    }
-
-    private List<JavaccToken> collectTokens(ASTCompilationUnit node) {
-        List<JavaccToken> tokens = new ArrayList<>();
-        for (JavaccToken t : GenericToken.range(node.getFirstToken(), node.getLastToken())) {
-            tokens.add(t);
-        }
-        return tokens;
-    }
-
-    private int lineOf(JavaccToken token) {
-        return token.getReportLocation().getStartLine();
     }
 
     private void reportOnce(RuleContext ctx, ASTCompilationUnit root,

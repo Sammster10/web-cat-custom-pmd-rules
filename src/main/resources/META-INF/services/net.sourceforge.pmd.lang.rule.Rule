@@ -6,6 +6,7 @@ edu.vt.cs.webcat.rules.SimpleIndentationRule
 edu.vt.cs.webcat.rules.DynamicIndentationRule
 edu.vt.cs.webcat.rules.WhitespaceAndPaddingRule
 edu.vt.cs.webcat.rules.LineLayoutRule
+edu.vt.cs.webcat.rules.RightCurlyBlockRule
 
 edu.vt.cs.webcat.rules.JUnitSpellingRule
 edu.vt.cs.webcat.rules.JUnitStaticSuiteRule

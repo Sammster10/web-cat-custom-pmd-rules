@@ -46,9 +46,6 @@ import java.util.Deque;
  *   <li>{@code tabViolationMessage} &mdash; message reported when a tab is found</li>
  *   <li>{@code indentViolationMessage} &mdash; message reported for bad indentation</li>
  * </ul>
- *
- * @author Web-CAT
- * @version 1.0
  */
 public class SimpleIndentationRule extends AbstractRule {
 
