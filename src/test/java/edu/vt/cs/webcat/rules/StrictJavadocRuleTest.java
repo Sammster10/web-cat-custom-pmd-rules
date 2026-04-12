@@ -622,4 +622,282 @@ class StrictJavadocRuleTest {
             assertNoViolations(code);
         }
     }
+
+    @Nested
+    class OverrideMethods {
+
+        @Test
+        void explicitOverrideNoJavadocNoViolation() {
+            String code = wrapInClass(
+                    "    @Override\n"
+                            + "    public String toString() { return \"\"; }");
+            assertNoViolations(code);
+        }
+
+        @Test
+        void explicitOverrideWithInheritDocOnlyNoViolation() {
+            String code = wrapInClass(
+                    "    /** {@inheritDoc} */\n"
+                            + "    @Override\n"
+                            + "    public String toString() { return \"\"; }");
+            assertNoViolations(code);
+        }
+
+        @Test
+        void explicitOverrideWithMultiLineInheritDocOnlyNoViolation() {
+            String code = wrapInClass(
+                    "    /**\n"
+                            + "     * {@inheritDoc}\n"
+                            + "     */\n"
+                            + "    @Override\n"
+                            + "    public String toString() { return \"\"; }");
+            assertNoViolations(code);
+        }
+
+        @Test
+        void explicitOverrideWithFullJavadocValidated() {
+            String code = wrapInClass(
+                    "    /**\n"
+                            + "     * Custom description.\n"
+                            + "     * @return the string\n"
+                            + "     */\n"
+                            + "    @Override\n"
+                            + "    public String toString() { return \"\"; }");
+            assertNoViolations(code);
+        }
+
+        @Test
+        void explicitOverrideWithFullJavadocMissingReturnReported() {
+            String code = wrapInClass(
+                    "    /**\n"
+                            + "     * Custom description.\n"
+                            + "     */\n"
+                            + "    @Override\n"
+                            + "    public String toString() { return \"\"; }");
+            assertHasViolation(code, "must declare @return");
+        }
+
+        @Test
+        void explicitOverrideEqualsNoJavadocNoViolation() {
+            String code = wrapInClass(
+                    "    @Override\n"
+                            + "    public boolean equals(Object obj) { return false; }");
+            assertNoViolations(code);
+        }
+
+        @Test
+        void explicitOverrideHashCodeNoJavadocNoViolation() {
+            String code = wrapInClass(
+                    "    @Override\n"
+                            + "    public int hashCode() { return 0; }");
+            assertNoViolations(code);
+        }
+
+        @Test
+        void explicitOverrideVoidMethodNoJavadocNoViolation() {
+            String code = VALID_CLASS_JAVADOC
+                    + "class T extends Thread {\n"
+                    + "    @Override\n"
+                    + "    public void run() {}\n"
+                    + "}";
+            assertNoViolations(code);
+        }
+
+        @Test
+        void explicitOverrideWithParamsJavadocValidated() {
+            String code = wrapInClass(
+                    "    /**\n"
+                            + "     * Checks equality.\n"
+                            + "     */\n"
+                            + "    @Override\n"
+                            + "    public boolean equals(Object obj) { return false; }");
+            assertHasViolation(code, "missing @param");
+        }
+
+        @Test
+        void nonOverrideMethodWithoutJavadocStillReported() {
+            String code = wrapInClass(
+                    "    void doSomething() {}");
+            assertHasViolation(code, "must have Javadoc");
+        }
+
+        @Test
+        void nonOverrideMethodWithValidJavadocNoViolation() {
+            String code = wrapInClass(
+                    "    /**\n"
+                            + "     * Does something.\n"
+                            + "     */\n"
+                            + "    void doSomething() {}");
+            assertNoViolations(code);
+        }
+    }
+
+    @Nested
+    class ImplicitOverrideMethods {
+
+        @Test
+        void toStringWithoutAnnotationNoJavadocNoViolation() {
+            String code = wrapInClass(
+                    "    public String toString() { return \"\"; }");
+            assertNoViolations(code);
+        }
+
+        @Test
+        void equalsWithoutAnnotationNoJavadocNoViolation() {
+            String code = wrapInClass(
+                    "    public boolean equals(Object obj) { return false; }");
+            assertNoViolations(code);
+        }
+
+        @Test
+        void hashCodeWithoutAnnotationNoJavadocNoViolation() {
+            String code = wrapInClass(
+                    "    public int hashCode() { return 0; }");
+            assertNoViolations(code);
+        }
+
+        @Test
+        void implicitOverrideWithInheritDocOnlyNoViolation() {
+            String code = wrapInClass(
+                    "    /** {@inheritDoc} */\n"
+                            + "    public String toString() { return \"\"; }");
+            assertNoViolations(code);
+        }
+
+        @Test
+        void implicitOverrideWithFullJavadocValidated() {
+            String code = wrapInClass(
+                    "    /**\n"
+                            + "     * Custom toString.\n"
+                            + "     * @return the string\n"
+                            + "     */\n"
+                            + "    public String toString() { return \"\"; }");
+            assertNoViolations(code);
+        }
+
+        @Test
+        void implicitOverrideWithFullJavadocMissingReturnReported() {
+            String code = wrapInClass(
+                    "    /**\n"
+                            + "     * Custom toString.\n"
+                            + "     */\n"
+                            + "    public String toString() { return \"\"; }");
+            assertHasViolation(code, "must declare @return");
+        }
+
+        @Test
+        void interfaceImplWithoutAnnotationNoJavadocNoViolation() {
+            String code = VALID_CLASS_JAVADOC
+                    + "class T implements Runnable {\n"
+                    + "    public void run() {}\n"
+                    + "}";
+            assertNoViolations(code);
+        }
+
+        @Test
+        void interfaceImplWithInheritDocNoViolation() {
+            String code = VALID_CLASS_JAVADOC
+                    + "class T implements Runnable {\n"
+                    + "    /** {@inheritDoc} */\n"
+                    + "    public void run() {}\n"
+                    + "}";
+            assertNoViolations(code);
+        }
+
+        @Test
+        void interfaceImplWithMultiLineInheritDocNoViolation() {
+            String code = VALID_CLASS_JAVADOC
+                    + "class T implements Runnable {\n"
+                    + "    /**\n"
+                    + "     * {@inheritDoc}\n"
+                    + "     */\n"
+                    + "    public void run() {}\n"
+                    + "}";
+            assertNoViolations(code);
+        }
+
+        @Test
+        void interfaceImplWithFullJavadocValidated() {
+            String code = VALID_CLASS_JAVADOC
+                    + "class T implements Runnable {\n"
+                    + "    /**\n"
+                    + "     * Runs the task.\n"
+                    + "     */\n"
+                    + "    public void run() {}\n"
+                    + "}";
+            assertNoViolations(code);
+        }
+
+        @Test
+        void nonMatchingMethodStillRequiresJavadoc() {
+            String code = wrapInClass(
+                    "    public void customMethod() {}");
+            assertHasViolation(code, "must have Javadoc");
+        }
+
+        @Test
+        void methodWithSameNameDifferentArityNotImplicitOverride() {
+            String code = wrapInClass(
+                    "    public String toString(int x) { return \"\"; }");
+            assertHasViolation(code, "must have Javadoc");
+        }
+    }
+
+    @Nested
+    class InheritDocEdgeCases {
+
+        @Test
+        void inheritDocWithExtraTextIsNotInheritDocOnly() {
+            String code = wrapInClass(
+                    "    /**\n"
+                            + "     * {@inheritDoc}\n"
+                            + "     * Plus extra docs.\n"
+                            + "     */\n"
+                            + "    @Override\n"
+                            + "    public String toString() { return \"\"; }");
+            assertHasViolation(code, "must declare @return");
+        }
+
+        @Test
+        void inheritDocWithTagsIsNotInheritDocOnly() {
+            String code = wrapInClass(
+                    "    /**\n"
+                            + "     * {@inheritDoc}\n"
+                            + "     * @return the value\n"
+                            + "     */\n"
+                            + "    @Override\n"
+                            + "    public String toString() { return \"\"; }");
+            assertNoViolations(code);
+        }
+
+        @Test
+        void emptyJavadocOnOverrideStillValidated() {
+            String code = wrapInClass(
+                    "    /**\n"
+                            + "     *\n"
+                            + "     */\n"
+                            + "    @Override\n"
+                            + "    public String toString() { return \"\"; }");
+            assertHasViolation(code, "must declare @return");
+        }
+
+        @Test
+        void inheritDocInNonOverrideMethodStillValidated() {
+            String code = wrapInClass(
+                    "    /**\n"
+                            + "     * {@inheritDoc}\n"
+                            + "     */\n"
+                            + "    void notAnOverride() {}");
+            assertNoViolations(code);
+        }
+
+        @Test
+        void inheritDocOnlyCompactForm() {
+            String code = wrapInClass(
+                    "    /**{@inheritDoc}*/\n"
+                            + "    @Override\n"
+                            + "    public String toString() { return \"\"; }");
+            assertNoViolations(code);
+        }
+    }
 }

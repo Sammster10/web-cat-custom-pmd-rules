@@ -1,5 +1,6 @@
 package edu.vt.cs.webcat.rules;
 
+import net.sourceforge.pmd.lang.document.Chars;
 import net.sourceforge.pmd.lang.java.ast.*;
 import net.sourceforge.pmd.lang.java.rule.AbstractJavaRulechainRule;
 import net.sourceforge.pmd.lang.java.symbols.JFormalParamSymbol;
@@ -36,6 +37,13 @@ import java.util.*;
  *   <li>Duplicate, unknown, or malformed {@code @param} tags are reported</li>
  *   <li>Duplicate {@code @return} tags are reported</li>
  * </ul>
+ *
+ * <h3>Override methods</h3>
+ * <p>If a method overrides a superclass method or implements an interface method
+ * (detected via {@code @Override} annotation),
+ * Javadoc is not required. If the only Javadoc content is {@code {@inheritDoc}},
+ * the method is also skipped. However, if a Javadoc comment is present with
+ * content beyond {@code {@inheritDoc}}, all normal validation rules apply.</p>
  *
  * <h3>Fields</h3>
  * <ul>
@@ -223,6 +231,16 @@ public class StrictJavadocRule extends AbstractJavaRulechainRule {
 
     @Override
     public Object visit(ASTMethodDeclaration node, Object data) {
+        JavadocComment comment = node.getJavadocComment();
+
+        if (comment == null && node.isOverridden()) {
+            return data;
+        }
+
+        if (comment != null && isInheritDocOnly(comment)) {
+            return data;
+        }
+
         validateExecutable(
                 node,
                 data,
@@ -893,6 +911,25 @@ public class StrictJavadocRule extends AbstractJavaRulechainRule {
 
     private boolean isDuplicateAllowed(String tagName) {
         return getProperty(ALLOWED_DUPLICATE_TAGS).contains(tagName);
+    }
+
+
+    private boolean isInheritDocOnly(JavadocComment comment) {
+        Iterable<Chars> lines = comment.getFilteredLines();
+        boolean isOnlyInheritDoc = false;
+        for (Chars line : lines) {
+            String trimmed = line.toString().trim();
+            if (trimmed.isEmpty()) {
+                continue;
+            }
+            if ("{@inheritDoc}".equals(trimmed)) {
+                isOnlyInheritDoc = true;
+            } else {
+                return false;
+            }
+        }
+
+        return isOnlyInheritDoc;
     }
 
     private void addViolation(Object data, Object node, String message, Object... args) {
