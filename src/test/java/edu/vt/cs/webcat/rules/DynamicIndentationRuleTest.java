@@ -2716,4 +2716,299 @@ class DynamicIndentationRuleTest {
             assertNoViolations(code);
         }
     }
+
+    // ---------------------------------------------------------------
+    // Allman / BSD brace style — opening brace on its own line
+    // ---------------------------------------------------------------
+
+    @Nested
+    class AllmanBraceStyle {
+
+        @Test
+        void methodWithBraceOnOwnLine() {
+            assertNoViolations(fourSpaceClass(
+                    "    void m()",
+                    "    {",
+                    "        int x = 1;",
+                    "    }"));
+        }
+
+        @Test
+        void constructorWithBraceOnOwnLine() {
+            assertNoViolations(fourSpaceClass(
+                    "    T()",
+                    "    {",
+                    "        int x = 1;",
+                    "    }"));
+        }
+
+        @Test
+        void ifWithBraceOnOwnLine() {
+            assertNoViolations(fourSpaceClass(
+                    "    void m()",
+                    "    {",
+                    "        if (true)",
+                    "        {",
+                    "            int x = 1;",
+                    "        }",
+                    "    }"));
+        }
+
+        @Test
+        void ifElseWithBracesOnOwnLines() {
+            assertNoViolations(fourSpaceClass(
+                    "    void m()",
+                    "    {",
+                    "        if (true)",
+                    "        {",
+                    "            int x = 1;",
+                    "        }",
+                    "        else",
+                    "        {",
+                    "            int y = 2;",
+                    "        }",
+                    "    }"));
+        }
+
+        @Test
+        void whileWithBraceOnOwnLine() {
+            assertNoViolations(fourSpaceClass(
+                    "    void m()",
+                    "    {",
+                    "        while (true)",
+                    "        {",
+                    "            break;",
+                    "        }",
+                    "    }"));
+        }
+
+        @Test
+        void forWithBraceOnOwnLine() {
+            assertNoViolations(fourSpaceClass(
+                    "    void m()",
+                    "    {",
+                    "        for (int i = 0; i < 10; i++)",
+                    "        {",
+                    "            int x = i;",
+                    "        }",
+                    "    }"));
+        }
+
+        @Test
+        void foreachWithBraceOnOwnLine() {
+            String code = "import java.util.List;\n"
+                    + "class T {\n"
+                    + "    int a;\n"
+                    + "    int b;\n"
+                    + "    int c;\n"
+                    + "    int d;\n"
+                    + "    int e;\n"
+                    + "    int f;\n"
+                    + "    int g;\n"
+                    + "    int h;\n"
+                    + "    void m(List<String> items)\n"
+                    + "    {\n"
+                    + "        for (String s : items)\n"
+                    + "        {\n"
+                    + "            System.out.println(s);\n"
+                    + "        }\n"
+                    + "    }\n"
+                    + "}";
+            assertNoViolations(code);
+        }
+
+        @Test
+        void doWhileWithBraceOnOwnLine() {
+            assertNoViolations(fourSpaceClass(
+                    "    void m()",
+                    "    {",
+                    "        do",
+                    "        {",
+                    "            int x = 1;",
+                    "        }",
+                    "        while (false);",
+                    "    }"));
+        }
+
+        @Test
+        void synchronizedWithBraceOnOwnLine() {
+            assertNoViolations(fourSpaceClass(
+                    "    void m()",
+                    "    {",
+                    "        synchronized (this)",
+                    "        {",
+                    "            int x = 1;",
+                    "        }",
+                    "    }"));
+        }
+
+        @Test
+        void tryCatchFinallyWithBracesOnOwnLines() {
+            assertNoViolations(fourSpaceClass(
+                    "    void m()",
+                    "    {",
+                    "        try",
+                    "        {",
+                    "            int x = 1;",
+                    "        }",
+                    "        catch (Exception e)",
+                    "        {",
+                    "            e.printStackTrace();",
+                    "        }",
+                    "        finally",
+                    "        {",
+                    "            int z = 3;",
+                    "        }",
+                    "    }"));
+        }
+
+        @Test
+        void nestedClassWithBraceOnOwnLine() {
+            assertNoViolations(fourSpaceClass(
+                    "    static class Inner",
+                    "    {",
+                    "        int x;",
+                    "        int y;",
+                    "    }"));
+        }
+
+        @Test
+        void initializerBlockWithBraceOnOwnLine() {
+            assertNoViolations(fourSpaceClass(
+                    "    int x;",
+                    "    {",
+                    "        x = 42;",
+                    "    }"));
+        }
+
+        @Test
+        void lambdaWithBraceOnOwnLine() {
+            String code = "class T {\n"
+                    + "    int a;\n"
+                    + "    int b;\n"
+                    + "    int c;\n"
+                    + "    int d;\n"
+                    + "    int e;\n"
+                    + "    int f;\n"
+                    + "    int g;\n"
+                    + "    int h;\n"
+                    + "    Runnable r = () ->\n"
+                    + "    {\n"
+                    + "        int x = 1;\n"
+                    + "    };\n"
+                    + "}";
+            assertNoViolations(code);
+        }
+
+        @Test
+        void switchWithBraceOnOwnLine() {
+            assertNoViolations(fourSpaceClass(
+                    "    void m(int x)",
+                    "    {",
+                    "        switch (x)",
+                    "        {",
+                    "            case 1:",
+                    "                break;",
+                    "            default:",
+                    "                break;",
+                    "        }",
+                    "    }"));
+        }
+
+        @Test
+        void multipleMethodsAllmanStyle() {
+            assertNoViolations(fourSpaceClass(
+                    "    void m1()",
+                    "    {",
+                    "        int x = 1;",
+                    "    }",
+                    "    void m2()",
+                    "    {",
+                    "        int y = 2;",
+                    "    }",
+                    "    void m3()",
+                    "    {",
+                    "        int z = 3;",
+                    "    }"));
+        }
+
+        @Test
+        void nestedBlocksAllmanStyle() {
+            assertNoViolations(fourSpaceClass(
+                    "    void m()",
+                    "    {",
+                    "        if (true)",
+                    "        {",
+                    "            while (true)",
+                    "            {",
+                    "                for (int i = 0; i < 1; i++)",
+                    "                {",
+                    "                    break;",
+                    "                }",
+                    "                break;",
+                    "            }",
+                    "        }",
+                    "    }"));
+        }
+
+        @Test
+        void wrongIndentOnAllmanBraceStillReported() {
+            assertHasViolation(fourSpaceClass(
+                    "    void m()",
+                    "  {",
+                    "        int x = 1;",
+                    "    }"), "indented incorrectly");
+        }
+
+        @Test
+        void twoSpaceAllmanStyle() {
+            assertNoViolations(twoSpaceClass(
+                    "  void m()",
+                    "  {",
+                    "    int x = 1;",
+                    "  }"));
+        }
+
+        @Test
+        void mixedKRAndAllmanInSameFile() {
+            assertNoViolations(fourSpaceClass(
+                    "    void m1() {",
+                    "        int x = 1;",
+                    "    }",
+                    "    void m2()",
+                    "    {",
+                    "        int y = 2;",
+                    "    }"));
+        }
+
+        @Test
+        void allmanWithAnnotatedMethod() {
+            assertNoViolations(fourSpaceClass(
+                    "    @Override",
+                    "    void m()",
+                    "    {",
+                    "        int x = 1;",
+                    "    }"));
+        }
+
+        @Test
+        void elseIfChainAllmanStyle() {
+            assertNoViolations(fourSpaceClass(
+                    "    void m(int x)",
+                    "    {",
+                    "        if (x == 1)",
+                    "        {",
+                    "            int a = 1;",
+                    "        }",
+                    "        else if (x == 2)",
+                    "        {",
+                    "            int b = 2;",
+                    "        }",
+                    "        else",
+                    "        {",
+                    "            int c = 3;",
+                    "        }",
+                    "    }"));
+        }
+    }
 }

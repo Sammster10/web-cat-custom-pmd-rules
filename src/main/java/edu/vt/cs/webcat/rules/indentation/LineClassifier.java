@@ -26,6 +26,7 @@ public final class LineClassifier {
         Map<Integer, LineKind> result = new LinkedHashMap<>();
         Set<Integer> baseLines = collectBaseLines(rootNode);
         Set<Integer> multiLineStartLines = collectMultiLineConstructStartLines(rootNode);
+        Set<Integer> blockStartLines = collectBlockStartLines(rootNode);
 
         for (int i = 0; i < lines.size(); i++) {
             LineInfo info = lines.get(i);
@@ -42,9 +43,16 @@ public final class LineClassifier {
                 continue;
             }
 
+            boolean isCont = isContinuationLine(info, lines, i, multiLineStartLines);
             if (baseLines.contains(lineNum)) {
-                result.put(lineNum, LineKind.BASE);
-            } else if (isContinuationLine(info, lines, i, multiLineStartLines)) {
+                String trimmed = info.getText().trim();
+                if (isCont && blockStartLines.contains(lineNum)
+                        && !trimmed.equals("{")) {
+                    result.put(lineNum, LineKind.CONTINUATION);
+                } else {
+                    result.put(lineNum, LineKind.BASE);
+                }
+            } else if (isCont) {
                 result.put(lineNum, LineKind.CONTINUATION);
             } else {
                 result.put(lineNum, LineKind.BASE);
@@ -175,6 +183,7 @@ public final class LineClassifier {
         }
 
         if (node instanceof ASTBlock) {
+            baseLines.add(node.getBeginLine());
             baseLines.add(node.getEndLine());
         }
 
@@ -230,6 +239,11 @@ public final class LineClassifier {
             baseLines.add(node.getEndLine());
         }
 
+        if (node instanceof ASTDoStatement) {
+            baseLines.add(node.getBeginLine());
+            baseLines.add(node.getEndLine());
+        }
+
         for (int i = 0; i < node.getNumChildren(); i++) {
             collectBaseLinesRecursive(node.getChild(i), baseLines);
         }
@@ -268,9 +282,11 @@ public final class LineClassifier {
         }
 
         if (isTypeDeclaration(node)) {
-            int bodyEnd = findBodyEndLine(node);
-            if (bodyEnd > node.getBeginLine()) {
-                result.add(node.getBeginLine());
+            int bodyBeginLine = findTypeBodyBeginLine(node);
+            if (bodyBeginLine > node.getBeginLine()) {
+                for (int line = node.getBeginLine(); line < bodyBeginLine; line++) {
+                    result.add(line);
+                }
             }
         }
 
@@ -295,6 +311,21 @@ public final class LineClassifier {
                 || node instanceof ASTAnnotationTypeDeclaration;
     }
 
+    private static Set<Integer> collectBlockStartLines(Node root) {
+        Set<Integer> result = new HashSet<>();
+        collectBlockStartLinesRecursive(root, result);
+        return result;
+    }
+
+    private static void collectBlockStartLinesRecursive(Node node, Set<Integer> result) {
+        if (node instanceof ASTBlock) {
+            result.add(node.getBeginLine());
+        }
+        for (int i = 0; i < node.getNumChildren(); i++) {
+            collectBlockStartLinesRecursive(node.getChild(i), result);
+        }
+    }
+
     private static int findBodyEndLine(Node typeNode) {
         int maxEnd = 0;
         for (int i = 0; i < typeNode.getNumChildren(); i++) {
@@ -307,6 +338,20 @@ public final class LineClassifier {
             }
         }
         return maxEnd;
+    }
+
+    private static int findTypeBodyBeginLine(Node typeNode) {
+        for (int i = 0; i < typeNode.getNumChildren(); i++) {
+            Node child = typeNode.getChild(i);
+            if (child instanceof ASTModifierList) {
+                continue;
+            }
+            if (child.getBeginLine() != child.getEndLine()
+                    || child.getEndLine() == typeNode.getEndLine()) {
+                return child.getBeginLine();
+            }
+        }
+        return typeNode.getBeginLine();
     }
 
     private static boolean isStatement(Node node) {

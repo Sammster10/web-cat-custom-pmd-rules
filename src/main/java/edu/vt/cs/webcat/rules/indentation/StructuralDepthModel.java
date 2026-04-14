@@ -48,6 +48,10 @@ public final class StructuralDepthModel {
             setStartLineDepth(depthMap, node, depth);
             Node body = findClassBody(node);
             if (body != null) {
+                int braceRegionEnd = body.getBeginLine();
+                for (int line = node.getBeginLine(); line <= braceRegionEnd; line++) {
+                    depthMap.put(line, depth);
+                }
                 setClosingBraceDepth(depthMap, body, depth);
             }
             walkTypeBody(node, depth + 1, depthMap);
@@ -159,6 +163,7 @@ public final class StructuralDepthModel {
 
     private static void walkBlock(Node block, int ownerDepth,
                                   Map<Integer, Integer> depthMap) {
+        depthMap.put(block.getBeginLine(), ownerDepth);
         setClosingBraceDepth(depthMap, block, ownerDepth);
         int statementDepth = ownerDepth + 1;
         for (int i = 0; i < block.getNumChildren(); i++) {
@@ -170,6 +175,13 @@ public final class StructuralDepthModel {
                                    Map<Integer, Integer> depthMap) {
         setStartLineDepth(depthMap, switchNode, depth);
         setClosingBraceDepth(depthMap, switchNode, depth);
+
+        int firstChildLine = findFirstSwitchChildLine(switchNode);
+        if (firstChildLine > switchNode.getBeginLine()) {
+            for (int line = switchNode.getBeginLine(); line < firstChildLine; line++) {
+                depthMap.put(line, depth);
+            }
+        }
 
         int caseDepth = depth + 1;
         int caseBodyDepth = depth + 2;
@@ -204,6 +216,18 @@ public final class StructuralDepthModel {
                 walk(child, caseBodyDepth, depthMap);
             }
         }
+    }
+
+    private static int findFirstSwitchChildLine(Node switchNode) {
+        int min = switchNode.getEndLine();
+        for (int i = 0; i < switchNode.getNumChildren(); i++) {
+            Node child = switchNode.getChild(i);
+            if (child.getBeginLine() > switchNode.getBeginLine()
+                    && child.getBeginLine() < min) {
+                min = child.getBeginLine();
+            }
+        }
+        return min;
     }
 
     private static void walkControlStructure(Node node, int depth,
@@ -251,6 +275,23 @@ public final class StructuralDepthModel {
                     setStartLineDepth(depthMap, child, depth);
                 }
             }
+            return;
+        }
+
+        if (node instanceof ASTDoStatement) {
+            for (int i = 0; i < node.getNumChildren(); i++) {
+                Node child = node.getChild(i);
+                if (child instanceof ASTBlock) {
+                    walkBlock(child, depth, depthMap);
+                    for (int line = child.getEndLine() + 1; line <= node.getEndLine(); line++) {
+                        depthMap.put(line, depth);
+                    }
+                } else if (isStatement(child)
+                        && child.getBeginLine() != node.getBeginLine()) {
+                    walk(child, depth + 1, depthMap);
+                }
+            }
+            depthMap.put(node.getEndLine(), depth);
             return;
         }
 
