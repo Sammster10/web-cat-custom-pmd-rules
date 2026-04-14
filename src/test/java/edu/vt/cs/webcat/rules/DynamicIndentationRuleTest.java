@@ -1879,6 +1879,27 @@ class DynamicIndentationRuleTest {
                             + "}\n";
             assertNoViolations(code);
         }
+
+        @Test
+        void tryWithResourcesOnSeparateLine() {
+            String code =
+                    "import java.io.*;\n"
+                            + "import java.util.*;\n"
+                            + "\n"
+                            + "class T {\n"
+                            + "    int a;\n"
+                            + "    int b;\n"
+                            + "    int c;\n"
+                            + "    void m() throws Exception {\n"
+                            + "        try (\n"
+                            + "            Scanner fileInput = new Scanner(new File(\"x\"))\n"
+                            + "            ) {\n"
+                            + "            int x = fileInput.nextInt();\n"
+                            + "        }\n"
+                            + "    }\n"
+                            + "}\n";
+            assertNoViolations(code);
+        }
     }
 
     // ---------------------------------------------------------------

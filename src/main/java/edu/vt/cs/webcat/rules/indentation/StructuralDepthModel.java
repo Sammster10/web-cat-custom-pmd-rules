@@ -273,6 +273,9 @@ public final class StructuralDepthModel {
                     }
                 } else if (child instanceof ASTResourceList) {
                     setStartLineDepth(depthMap, child, depth);
+                    for (int j = 0; j < child.getNumChildren(); j++) {
+                        setAllLinesDepth(depthMap, child.getChild(j), depth + 1);
+                    }
                 }
             }
             return;
