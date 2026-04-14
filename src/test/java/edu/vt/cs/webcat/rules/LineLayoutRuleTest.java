@@ -349,13 +349,43 @@ class LineLayoutRuleTest {
                     + "}";
             assertNoViolations(code);
         }
-        
+
         @Test
         void singleStatementAfterCaseLabel() {
             String code = "class T {\n"
                     + "    void m(int x) {\n"
                     + "        switch (x) {\n"
                     + "            case 1: System.out.println(1);\n"
+                    + "        }\n"
+                    + "    }\n"
+                    + "}";
+            assertNoViolations(code);
+        }
+
+        @Test
+        void tryWithSingleResourceOnSameLine() {
+            String code = "import java.io.*;\n"
+                    + "import java.util.*;\n"
+                    + "class T {\n"
+                    + "    void m(String[] args) throws Exception {\n"
+                    + "        try (Scanner fileInput = new Scanner(new File(args[0]))) {\n"
+                    + "            System.out.println(fileInput.nextLine());\n"
+                    + "        }\n"
+                    + "    }\n"
+                    + "}";
+            assertNoViolations(code);
+        }
+
+        @Test
+        void tryWithMultipleResourcesOnSeparateLines() {
+            String code = "import java.io.*;\n"
+                    + "class T {\n"
+                    + "    void m() throws Exception {\n"
+                    + "        try (\n"
+                    + "            InputStream is = new FileInputStream(\"a\");\n"
+                    + "            OutputStream os = new FileOutputStream(\"b\")\n"
+                    + "        ) {\n"
+                    + "            os.write(is.read());\n"
                     + "        }\n"
                     + "    }\n"
                     + "}";

@@ -1,5 +1,6 @@
 package edu.vt.cs.webcat.rules;
 
+import net.sourceforge.pmd.lang.ast.Node;
 import net.sourceforge.pmd.lang.ast.impl.javacc.JavaccToken;
 import net.sourceforge.pmd.lang.java.ast.*;
 import net.sourceforge.pmd.lang.java.rule.AbstractJavaRulechainRule;
@@ -90,6 +91,10 @@ public class LineLayoutRule extends AbstractJavaRulechainRule {
             return true;
         }
 
+        if (isTryWithResourcesChild(stmt)) {
+            return true;
+        }
+
         return false;
     }
 
@@ -120,6 +125,19 @@ public class LineLayoutRule extends AbstractJavaRulechainRule {
         }
         ASTForeachStatement forEach = (ASTForeachStatement) stmt.getParent();
         return stmt != forEach.getBody();
+    }
+
+    private boolean isTryWithResourcesChild(ASTStatement stmt) {
+        for (Node parent = stmt.getParent();
+             parent != null; parent = parent.getParent()) {
+            if (parent instanceof ASTResourceList) {
+                return true;
+            }
+            if (parent instanceof ASTTryStatement) {
+                return false;
+            }
+        }
+        return false;
     }
 
     private Set<Integer> collectForHeaderLines(ASTCompilationUnit root) {
