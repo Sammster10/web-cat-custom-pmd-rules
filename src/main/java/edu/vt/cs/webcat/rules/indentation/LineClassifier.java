@@ -12,7 +12,7 @@ public final class LineClassifier {
             "^\\s*(?:\\.|,|->|\\)|]|\\+[^+]?|-[^-]?|\\*|/[^/*]|%|&&|\\|\\||\\?|:(?!:))");
 
     private static final Pattern ENDS_WITH_CONTINUATION = Pattern.compile(
-            "(?:\\(|\\[|\\.|,|\\+|-|\\*|/|%|&&|\\|\\||\\?|:|->|\\{|=)\\s*(?://.*)?$");
+            "(?:\\(|\\[|\\.|,|\\+|-|\\*|/|%|&&|\\|\\||\\?|:|->|\\{|=|>|<)\\s*(?://.*)?$");
 
     private static final Set<String> CLAUSE_KEYWORDS = new HashSet<>(
             Arrays.asList("extends", "implements", "permits", "throws"));

@@ -3699,4 +3699,48 @@ class DynamicIndentationRuleTest {
             }
         }
     }
+
+    @Nested
+    class WrappedComparisonConditions {
+        @Test
+        void comparisonRightOperandOnNextLineInsideIfCondition() {
+            String code = fourSpaceClass(
+                    "    void m(int a, int b) {",
+                    "        if (a >",
+                    "            b) {",
+                    "            int x = 1;",
+                    "        }",
+                    "    }");
+
+            assertNoViolations(code);
+        }
+
+        @Test
+        void comparisonRightOperandOnNextLineAfterLeadingAndAnd() {
+            String code = fourSpaceClass(
+                    "    void m(int a, int b, boolean ok) {",
+                    "        if (ok",
+                    "            && a >",
+                    "            b) {",
+                    "            int x = 1;",
+                    "        }",
+                    "    }");
+
+            assertNoViolations(code);
+        }
+
+        @Test
+        void comparisonRightOperandOnNextLineWithParentheses() {
+            String code = fourSpaceClass(
+                    "    void m(int a, int b, boolean ok) {",
+                    "        if ((ok)",
+                    "            && (a >",
+                    "            b)) {",
+                    "            int x = 1;",
+                    "        }",
+                    "    }");
+
+            assertNoViolations(code);
+        }
+    }
 }
