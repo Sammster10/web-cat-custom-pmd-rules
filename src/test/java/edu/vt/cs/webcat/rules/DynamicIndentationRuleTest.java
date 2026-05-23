@@ -15,6 +15,8 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -45,7 +47,7 @@ class DynamicIndentationRuleTest {
             analysis.files().addFile(
                     TextFile.forCharSeq(code,
                             FileId.fromPathLikeString("Test.java"),
-                            JavaLanguageModule.getInstance().getVersion("17")));
+                            Objects.requireNonNull(JavaLanguageModule.getInstance().getVersion("17"))));
             Report report = analysis.performAnalysisAndCollectReport();
             return report.getViolations();
         }
@@ -3073,6 +3075,628 @@ class DynamicIndentationRuleTest {
                     "            int c = 3;",
                     "        }",
                     "    }"));
+        }
+    }
+    // ---------------------------------------------------------------
+    // Additional comprehensive edge cases
+    // ---------------------------------------------------------------
+
+    private List<RuleViolation> runRuleWithFileName(String fileName, String code) {
+        PMDConfiguration config = new PMDConfiguration();
+        config.setDefaultLanguageVersion(
+                JavaLanguageModule.getInstance().getVersion("17"));
+        RuleSet ruleSet = RuleSet.forSingleRule(rule);
+
+        try (PmdAnalysis analysis = PmdAnalysis.create(config)) {
+            analysis.addRuleSet(ruleSet);
+            analysis.files().addFile(
+                    TextFile.forCharSeq(code,
+                            FileId.fromPathLikeString(fileName),
+                            JavaLanguageModule.getInstance().getVersion("17")));
+            Report report = analysis.performAnalysisAndCollectReport();
+            return report.getViolations();
+        }
+    }
+
+    private List<RuleViolation> runRuleAcrossTwoFiles(
+            String firstFileName,
+            String firstCode,
+            String secondFileName,
+            String secondCode) {
+        PMDConfiguration config = new PMDConfiguration();
+        config.setDefaultLanguageVersion(
+                JavaLanguageModule.getInstance().getVersion("17"));
+        RuleSet ruleSet = RuleSet.forSingleRule(rule);
+
+        try (PmdAnalysis analysis = PmdAnalysis.create(config)) {
+            analysis.addRuleSet(ruleSet);
+            analysis.files().addFile(
+                    TextFile.forCharSeq(firstCode,
+                            FileId.fromPathLikeString(firstFileName),
+                            JavaLanguageModule.getInstance().getVersion("17")));
+            analysis.files().addFile(
+                    TextFile.forCharSeq(secondCode,
+                            FileId.fromPathLikeString(secondFileName),
+                            JavaLanguageModule.getInstance().getVersion("17")));
+            Report report = analysis.performAnalysisAndCollectReport();
+            return report.getViolations();
+        }
+    }
+
+    @Nested
+    class RuleStateIsolation {
+        @Test
+        void sameRuleInstanceDoesNotLeakIndentBetweenRuns() {
+            assertNoViolations(twoSpaceClass(
+                    "  void m() {",
+                    "    int x = 1;",
+                    "  }"));
+
+            assertNoViolations(fourSpaceClass(
+                    "    void m() {",
+                    "        int x = 1;",
+                    "    }"));
+        }
+
+        @Test
+        void multipleFilesInferIndentIndependentlyInSameAnalysis() {
+            String twoSpaceCode = twoSpaceClass(
+                    "  void m() {",
+                    "    int x = 1;",
+                    "  }");
+
+            String fourSpaceCode = fourSpaceClass(
+                    "    void m() {",
+                    "        int x = 1;",
+                    "    }");
+
+            List<RuleViolation> violations = runRuleAcrossTwoFiles(
+                    "TwoSpace.java", twoSpaceCode,
+                    "FourSpace.java", fourSpaceCode);
+
+            assertTrue(violations.isEmpty(),
+                    String.format("Expected no cross-file state leakage but found: %s",
+                            violations));
+        }
+
+        @Test
+        void violationInFirstFileDoesNotChangeConventionForSecondFile() {
+            String badFourSpaceCode = fourSpaceClass(
+                    "    void m() {",
+                    "      int x = 1;",
+                    "    }");
+
+            String goodTwoSpaceCode = twoSpaceClass(
+                    "  void m() {",
+                    "    int y = 2;",
+                    "  }");
+
+            List<RuleViolation> violations = runRuleAcrossTwoFiles(
+                    "BadFourSpace.java", badFourSpaceCode,
+                    "GoodTwoSpace.java", goodTwoSpaceCode);
+
+            long indentViolations = violations.stream()
+                    .filter(v -> v.getDescription().contains("indented incorrectly"))
+                    .count();
+
+            assertEquals(1, indentViolations,
+                    String.format("Expected only the first file to violate, got: %s",
+                            violations));
+        }
+    }
+
+    @Nested
+    class RawTextAndWhitespaceEdgeCases {
+        @Test
+        void actualTabInsideStringLiteralNotReportedAsTabIndentation() {
+            List<RuleViolation> violations = runRule(fourSpaceClass(
+                    "    String s = \"a\tb\";"));
+
+            boolean hasTabViolation = violations.stream()
+                    .anyMatch(v -> v.getDescription().contains("tab character"));
+
+            assertFalse(hasTabViolation,
+                    String.format("Actual tab inside string literal should not be a tab indentation violation: %s",
+                            violations));
+        }
+
+        @Test
+        void actualTabInsideLineCommentNotReportedAsTabIndentation() {
+            List<RuleViolation> violations = runRule(fourSpaceClass(
+                    "    // comment with\tactual tab",
+                    "    int x = 1;"));
+
+            boolean hasTabViolation = violations.stream()
+                    .anyMatch(v -> v.getDescription().contains("tab character"));
+
+            assertFalse(hasTabViolation,
+                    String.format("Actual tab inside line comment should not be a tab indentation violation: %s",
+                            violations));
+        }
+
+        @Test
+        void actualTabInsideBlockCommentNotReportedAsTabIndentation() {
+            List<RuleViolation> violations = runRule(fourSpaceClass(
+                    "    /* comment with\tactual tab */",
+                    "    int x = 1;"));
+
+            boolean hasTabViolation = violations.stream()
+                    .anyMatch(v -> v.getDescription().contains("tab character"));
+
+            assertFalse(hasTabViolation,
+                    String.format("Actual tab inside block comment should not be a tab indentation violation: %s",
+                            violations));
+        }
+
+        @Test
+        void actualTabInsideTextBlockInteriorCurrentlyReported() {
+            String code = fourSpaceClass(
+                    "    String s = \"\"\"",
+                    "\ttext block content",
+                    "            \"\"\";");
+
+            assertHasViolation(code, "tab character");
+        }
+
+        @Test
+        void spacesOnlyLineIgnored() {
+            assertNoViolations(fourSpaceClass(
+                    "    void m() {",
+                    "        int x = 1;",
+                    "        ",
+                    "        int y = 2;",
+                    "    }"));
+        }
+
+        @Test
+        void tabOnlyBlankLineReportsTabViolation() {
+            String code = fourSpaceClass(
+                    "    void m() {",
+                    "\t",
+                    "        int x = 1;",
+                    "    }");
+
+            assertHasViolation(code, "tab character");
+        }
+
+        @Test
+        void crlfLineEndingsHandled() {
+            String code = fourSpaceClass(
+                    "    void m() {",
+                    "        int x = 1;",
+                    "    }").replace("\n", "\r\n");
+
+            assertNoViolations(code);
+        }
+
+        @Test
+        void trailingSpacesIgnored() {
+            String code = "class T {\n"
+                    + "    int a;    \n"
+                    + "    int b;    \n"
+                    + "    int c;    \n"
+                    + "    int d;    \n"
+                    + "    void m() {    \n"
+                    + "        int x = 1;    \n"
+                    + "    }    \n"
+                    + "}";
+
+            assertNoViolations(code);
+        }
+
+        @Test
+        void noFinalNewlineHandled() {
+            assertNoViolations("class T {\n"
+                    + "    int a;\n"
+                    + "    int b;\n"
+                    + "}");
+        }
+    }
+
+    @Nested
+    class NegativeClosingDelimiterEdgeCases {
+        @Test
+        void closingParenOnOwnLineWrongIndent() {
+            String code = fourSpaceClass(
+                    "    void m() {",
+                    "        foo(",
+                    "            1,",
+                    "            2",
+                    "            );",
+                    "    }");
+
+            assertHasViolation(code, "indented incorrectly");
+        }
+
+        @Test
+        void closingBracketOnOwnLineWrongIndent() {
+            String code = fourSpaceClass(
+                    "    int[] arr = new int[]{",
+                    "        1,",
+                    "        2",
+                    "        };");
+
+            assertHasViolation(code, "indented incorrectly");
+        }
+
+        @Test
+        void closingBraceParenSemicolonWrongIndent() {
+            String code = fourSpaceClass(
+                    "    void m() {",
+                    "        Runnable r = () -> {",
+                    "            int x = 1;",
+                    "            };",
+                    "    }");
+
+            assertHasViolation(code, "indented incorrectly");
+        }
+    }
+
+    @Nested
+    class GenericContinuationEdgeCases {
+        @Test
+        void wrappedGenericFieldTypeCurrentlyReported() {
+            String code = fourSpaceClass(
+                    "    java.util.Map<String,",
+                    "            java.util.List<Integer>> map;");
+
+            assertHasViolation(code, "indented incorrectly");
+        }
+
+        @Test
+        void wrappedGenericMethodTypeParametersCurrentlyReported() {
+            String code = fourSpaceClass(
+                    "    <T extends Comparable<T>,",
+                    "            U extends Number> void m(T t, U u) {",
+                    "        int x = 1;",
+                    "    }");
+
+            assertHasViolation(code, "indented incorrectly");
+        }
+
+        @Test
+        void wrappedGenericMethodTypeParametersNotMultiple() {
+            String code = fourSpaceClass(
+                    "    <T extends Comparable<T>,",
+                    "           U extends Number> void m(T t, U u) {",
+                    "        int x = 1;",
+                    "    }");
+
+            assertHasViolation(code, "indented incorrectly");
+        }
+
+        @Test
+        void wrappedGenericIntersectionBoundCurrentlyReported() {
+            String code = fourSpaceClass(
+                    "    <T extends Runnable",
+                    "            & AutoCloseable> void m(T t) throws Exception {",
+                    "        t.run();",
+                    "    }");
+
+            assertHasViolation(code, "indented incorrectly");
+        }
+    }
+
+    @Nested
+    class Java17Constructs {
+        @Test
+        void sealedClassWithPermitsOnOneLine() {
+            String code = "sealed class Shape permits Circle, Square {\n"
+                    + "    int sides;\n"
+                    + "}\n"
+                    + "\n"
+                    + "final class Circle extends Shape {\n"
+                    + "    int radius;\n"
+                    + "}\n"
+                    + "\n"
+                    + "final class Square extends Shape {\n"
+                    + "    int side;\n"
+                    + "}\n";
+
+            assertNoViolations(code);
+        }
+
+        @Test
+        void wrappedPermitsClause() {
+            String code = "sealed class Shape\n"
+                    + "        permits Circle,\n"
+                    + "        Square {\n"
+                    + "    int sides;\n"
+                    + "}\n"
+                    + "\n"
+                    + "final class Circle extends Shape {\n"
+                    + "    int radius;\n"
+                    + "}\n"
+                    + "\n"
+                    + "final class Square extends Shape {\n"
+                    + "    int side;\n"
+                    + "}\n";
+
+            assertNoViolations(code);
+        }
+
+        @Test
+        void wrappedPermitsClauseNotMultiple() {
+            String code = "sealed class Shape\n"
+                    + "       permits Circle,\n"
+                    + "       Square {\n"
+                    + "    int sides;\n"
+                    + "}\n"
+                    + "\n"
+                    + "final class Circle extends Shape {\n"
+                    + "    int radius;\n"
+                    + "}\n"
+                    + "\n"
+                    + "final class Square extends Shape {\n"
+                    + "    int side;\n"
+                    + "}\n";
+
+            assertHasViolation(code, "multiple of 4");
+        }
+
+        @Test
+        void instanceofPatternMatching() {
+            assertNoViolations(fourSpaceClass(
+                    "    void m(Object o) {",
+                    "        if (o instanceof String s) {",
+                    "            System.out.println(s);",
+                    "        }",
+                    "    }"));
+        }
+
+        @Test
+        void wrappedInstanceofPatternCondition() {
+            assertNoViolations(fourSpaceClass(
+                    "    void m(Object o, boolean b) {",
+                    "        if (o instanceof String s",
+                    "                && b) {",
+                    "            System.out.println(s);",
+                    "        }",
+                    "    }"));
+        }
+    }
+
+    @Nested
+    class LocalDeclarations {
+        @Test
+        void localClassInsideMethod() {
+            assertNoViolations(fourSpaceClass(
+                    "    void m() {",
+                    "        class Local {",
+                    "            int x;",
+                    "        }",
+                    "        Local local = new Local();",
+                    "    }"));
+        }
+
+        @Test
+        void localClassWrongMemberIndent() {
+            String code = fourSpaceClass(
+                    "    void m() {",
+                    "        class Local {",
+                    "        int x;",
+                    "        }",
+                    "    }");
+
+            assertHasViolation(code, "indented incorrectly");
+        }
+
+        @Test
+        void localRecordInsideMethod() {
+            assertNoViolations(fourSpaceClass(
+                    "    void m() {",
+                    "        record Pair(int a, int b) {",
+                    "            int sum() {",
+                    "                return a + b;",
+                    "            }",
+                    "        }",
+                    "    }"));
+        }
+    }
+
+    @Nested
+    class EnumConstantClassBodies {
+        @Test
+        void enumConstantClassBody() {
+            String code = "enum Op {\n"
+                    + "    PLUS {\n"
+                    + "        int apply(int a, int b) {\n"
+                    + "            return a + b;\n"
+                    + "        }\n"
+                    + "    },\n"
+                    + "    MINUS {\n"
+                    + "        int apply(int a, int b) {\n"
+                    + "            return a - b;\n"
+                    + "        }\n"
+                    + "    };\n"
+                    + "\n"
+                    + "    abstract int apply(int a, int b);\n"
+                    + "}\n";
+
+            assertNoViolations(code);
+        }
+
+        @Test
+        void enumConstantClassBodyWrongMethodIndent() {
+            String code = "enum Op {\n"
+                    + "    PLUS {\n"
+                    + "      int apply(int a, int b) {\n"
+                    + "            return a + b;\n"
+                    + "        }\n"
+                    + "    };\n"
+                    + "\n"
+                    + "    abstract int apply(int a, int b);\n"
+                    + "}\n";
+
+            assertHasViolation(code, "indented incorrectly");
+        }
+    }
+
+    @Nested
+    class TryWithResourcesAdditionalCases {
+        @Test
+        void tryWithMultipleResourcesCurrentRuleStyle() {
+            assertNoViolations(fourSpaceClass(
+                    "    void m() throws Exception {",
+                    "        try (",
+                    "            java.io.InputStream in = null;",
+                    "            java.io.OutputStream out = null",
+                    "            ) {",
+                    "            int x = 1;",
+                    "        }",
+                    "    }"));
+        }
+
+        @Test
+        void tryWithMultipleResourcesStatementDepthClosingParenCurrentlyReported() {
+            String code = fourSpaceClass(
+                    "    void m() throws Exception {",
+                    "        try (",
+                    "            java.io.InputStream in = null;",
+                    "            java.io.OutputStream out = null",
+                    "        ) {",
+                    "            int x = 1;",
+                    "        }",
+                    "    }");
+
+            assertHasViolation(code, "indented incorrectly");
+        }
+
+        @Test
+        void tryWithMultipleResourcesWrongResourceIndent() {
+            String code = fourSpaceClass(
+                    "    void m() throws Exception {",
+                    "        try (",
+                    "          java.io.InputStream in = null;",
+                    "            java.io.OutputStream out = null",
+                    "            ) {",
+                    "            int x = 1;",
+                    "        }",
+                    "    }");
+
+            assertHasViolation(code, "Expected 12 spaces");
+        }
+    }
+
+    @Nested
+    class LabeledStatements {
+        @Test
+        void labeledLoopCurrentlyReportedWhenIndentedLikeStatement() {
+            String code = fourSpaceClass(
+                    "    void m() {",
+                    "        outer:",
+                    "        for (int i = 0; i < 10; i++) {",
+                    "            break outer;",
+                    "        }",
+                    "    }");
+
+            assertHasViolation(code, "indented incorrectly");
+        }
+
+        @Test
+        void labeledLoopWrongIndentStillReported() {
+            String code = fourSpaceClass(
+                    "    void m() {",
+                    "      outer:",
+                    "        for (int i = 0; i < 10; i++) {",
+                    "            break outer;",
+                    "        }",
+                    "    }");
+
+            assertHasViolation(code, "indented incorrectly");
+        }
+    }
+
+    @Nested
+    class SpecialJavaFileKinds {
+        @Test
+        void moduleInfoDeclaration() {
+            String code = "module com.example.app {\n"
+                    + "    requires java.base;\n"
+                    + "    exports com.example.api;\n"
+                    + "}\n";
+
+            List<RuleViolation> violations = runRuleWithFileName("module-info.java", code);
+
+            assertTrue(violations.isEmpty(),
+                    String.format("Expected module-info.java to have no violations but found: %s",
+                            violations));
+        }
+
+        @Test
+        void moduleInfoDeclarationIndentCurrentlyNotEnforced() {
+            String code = "module com.example.app {\n"
+                    + "  requires java.base;\n"
+                    + "    exports com.example.api;\n"
+                    + "}\n";
+
+            List<RuleViolation> violations = runRuleWithFileName("module-info.java", code);
+
+            assertTrue(violations.isEmpty(),
+                    String.format("Current rule does not enforce module-info.java indentation: %s",
+                            violations));
+        }
+
+        @Test
+        void packageInfoAnnotations() {
+            String code = "@Deprecated\n"
+                    + "package com.example;\n";
+
+            List<RuleViolation> violations = runRuleWithFileName("package-info.java", code);
+
+            assertTrue(violations.isEmpty(),
+                    String.format("Expected package-info.java to have no violations but found: %s",
+                            violations));
+        }
+    }
+
+    @Nested
+    class ViolationMetadataAdditionalCases {
+        @Test
+        void indentViolationReportsCorrectLine() {
+            String code = fourSpaceClass(
+                    "    void m() {",
+                    "      int x = 1;",
+                    "    }");
+
+            RuleViolation violation = runRule(code).stream()
+                    .filter(v -> v.getDescription().contains("indented incorrectly"))
+                    .findFirst()
+                    .orElseThrow();
+
+            assertEquals(11, violation.getBeginLine(),
+                    String.format("Expected violation on deviant line but got: %s",
+                            violation));
+            assertTrue(violation.getBeginColumn() > 0,
+                    String.format("Expected positive begin column but got: %s",
+                            violation));
+        }
+
+        @Test
+        void violationsAreReportedInSourceOrder() {
+            String code = fourSpaceClass(
+                    "      void m() {",
+                    "        int x = 1;",
+                    "      }",
+                    "      void n() {",
+                    "        int y = 2;",
+                    "      }");
+
+            List<RuleViolation> violations = runRule(code).stream()
+                    .filter(v -> v.getDescription().contains("indented incorrectly"))
+                    .collect(Collectors.toList());
+
+            assertTrue(violations.size() >= 2,
+                    String.format("Expected at least two indentation violations but found: %s",
+                            violations));
+
+            for (int i = 1; i < violations.size(); i++) {
+                assertTrue(
+                        violations.get(i - 1).getBeginLine()
+                                <= violations.get(i).getBeginLine(),
+                        String.format("Violations should be reported in source order: %s",
+                                violations));
+            }
         }
     }
 }
