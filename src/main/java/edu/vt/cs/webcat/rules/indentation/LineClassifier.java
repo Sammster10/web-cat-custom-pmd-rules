@@ -9,10 +9,10 @@ import java.util.regex.Pattern;
 public final class LineClassifier {
 
     private static final Pattern STARTS_WITH_CONTINUATION_TOKEN = Pattern.compile(
-            "^\\s*(?:\\.|,|->|\\)|]|\\+[^+]?|-[^-]?|\\*|/[^/*]|%|&&|\\|\\||\\?|:[^:])");
+            "^\\s*(?:\\.|,|->|\\)|]|\\+[^+]?|-[^-]?|\\*|/[^/*]|%|&&|\\|\\||\\?|:(?!:))");
 
     private static final Pattern ENDS_WITH_CONTINUATION = Pattern.compile(
-            "(?:\\(|\\[|\\.|,|\\+|-|\\*|/|%|&&|\\|\\||\\?|:|->|\\{)\\s*(?://.*)?$");
+            "(?:\\(|\\[|\\.|,|\\+|-|\\*|/|%|&&|\\|\\||\\?|:|->|\\{|=)\\s*(?://.*)?$");
 
     private static final Set<String> CLAUSE_KEYWORDS = new HashSet<>(
             Arrays.asList("extends", "implements", "permits", "throws"));

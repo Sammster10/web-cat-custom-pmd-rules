@@ -1127,6 +1127,25 @@ class DynamicIndentationRuleTest {
                     "        );",
                     "    }"));
         }
+
+        @Test
+        void assignmentRhsWrappedToNextLineNoFalsePositive() {
+            assertNoViolations(fourSpaceClass(
+                    "    void m() {",
+                    "        int a =",
+                    "                2 + 2;",
+                    "    }"));
+        }
+
+        @Test
+        void assignmentRhsWrappedUnderIndented() {
+            String code = fourSpaceClass(
+                    "    void m() {",
+                    "        int a =",
+                    "        2 + 2;",
+                    "    }");
+            assertHasViolation(code, "indented incorrectly");
+        }
     }
 
     // ---------------------------------------------------------------
@@ -1157,6 +1176,30 @@ class DynamicIndentationRuleTest {
                     "            int y = 2;",
                     "        } finally {",
                     "            int z = 3;",
+                    "        }",
+                    "    }"));
+        }
+
+        @Test
+        void tryWithResourcesWrappedInitializerNoFalsePositive() {
+            assertNoViolations(fourSpaceClass(
+                    "    void m() throws Exception {",
+                    "        try (java.sql.Connection con =",
+                    "            null) {",
+                    "            int x = 1;",
+                    "        }",
+                    "    }"));
+        }
+
+        @Test
+        void tryWithResourcesTernaryWithLoneColonNoFalsePositive() {
+            assertNoViolations(fourSpaceClass(
+                    "    void m() throws Exception {",
+                    "        try (java.sql.Connection con =",
+                    "            (1 + 1 == 2 ? null",
+                    "                :",
+                    "                    null)) {",
+                    "            int x = 1;",
                     "        }",
                     "    }"));
         }

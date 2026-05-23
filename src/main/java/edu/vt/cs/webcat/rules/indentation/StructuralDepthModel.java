@@ -166,8 +166,12 @@ public final class StructuralDepthModel {
         depthMap.put(block.getBeginLine(), ownerDepth);
         setClosingBraceDepth(depthMap, block, ownerDepth);
         int statementDepth = ownerDepth + 1;
+
         for (int i = 0; i < block.getNumChildren(); i++) {
-            walk(block.getChild(i), statementDepth, depthMap);
+            Node child = block.getChild(i);
+            if (child.getBeginLine() >= block.getBeginLine()) {
+                walk(child, statementDepth, depthMap);
+            }
         }
     }
 
@@ -274,7 +278,13 @@ public final class StructuralDepthModel {
                 } else if (child instanceof ASTResourceList) {
                     setStartLineDepth(depthMap, child, depth);
                     for (int j = 0; j < child.getNumChildren(); j++) {
-                        setAllLinesDepth(depthMap, child.getChild(j), depth + 1);
+                        Node resource = child.getChild(j);
+                        if (resource.getBeginLine() > node.getBeginLine()) {
+                            depthMap.put(resource.getBeginLine(), depth + 1);
+                        }
+                        for (int line = resource.getBeginLine() + 1; line <= resource.getEndLine(); line++) {
+                            depthMap.put(line, depth);
+                        }
                     }
                 }
             }
@@ -485,10 +495,7 @@ public final class StructuralDepthModel {
                 || node instanceof ASTContinueStatement
                 || node instanceof ASTYieldStatement
                 || node instanceof ASTAssertStatement
-                || node instanceof ASTExplicitConstructorInvocation
-                || node instanceof ASTBlock
-                || isControlStructure(node)
-                || node instanceof ASTSwitchStatement;
+                || node instanceof ASTExplicitConstructorInvocation;
     }
 }
 
