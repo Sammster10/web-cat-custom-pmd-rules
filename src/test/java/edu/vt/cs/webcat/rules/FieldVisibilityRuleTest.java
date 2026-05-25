@@ -242,4 +242,65 @@ class FieldVisibilityRuleTest {
                             + "}");
         }
     }
+
+    @Nested
+    class InnerClassFieldIgnoring {
+        @Test
+        void publicFieldInInnerClassNotFlaggedWhenIgnored() {
+            setRuleProperty(rule, "ignoreModifiersOnInnerClassFields", true);
+            assertNoViolations(
+                    "class Outer {\n"
+                            + "    class Inner {\n"
+                            + "        public int x;\n"
+                            + "    }\n"
+                            + "}");
+        }
+
+        @Test
+        void protectedFieldInInnerClassNotFlaggedWhenIgnored() {
+            setRuleProperty(rule, "ignoreModifiersOnInnerClassFields", true);
+            setRuleProperty(rule, "allowProtected", false);
+            assertNoViolations(
+                    "class Outer {\n"
+                            + "    class Inner {\n"
+                            + "        protected int x;\n"
+                            + "    }\n"
+                            + "}");
+        }
+
+        @Test
+        void packagePrivateFieldInInnerClassNotFlaggedWhenIgnored() {
+            setRuleProperty(rule, "ignoreModifiersOnInnerClassFields", true);
+            assertNoViolations(
+                    "class Outer {\n"
+                            + "    class Inner {\n"
+                            + "        int x;\n"
+                            + "    }\n"
+                            + "}");
+        }
+
+        @Test
+        void outerClassFieldStillFlaggedWhenIgnored() {
+            setRuleProperty(rule, "ignoreModifiersOnInnerClassFields", true);
+            assertHasViolation(
+                    "class Outer {\n"
+                            + "    public int outerField;\n"
+                            + "    class Inner {\n"
+                            + "        public int innerField;\n"
+                            + "    }\n"
+                            + "}",
+                    "not static final");
+        }
+
+        @Test
+        void innerClassFieldStillFlaggedWhenNotIgnored() {
+            assertHasViolation(
+                    "class Outer {\n"
+                            + "    class Inner {\n"
+                            + "        public int x;\n"
+                            + "    }\n"
+                            + "}",
+                    "not static final");
+        }
+    }
 }

@@ -1,5 +1,6 @@
 package edu.vt.cs.webcat.rules;
 
+import net.sourceforge.pmd.lang.java.ast.ASTClassDeclaration;
 import net.sourceforge.pmd.lang.java.ast.ASTFieldDeclaration;
 import net.sourceforge.pmd.lang.java.ast.ASTVariableId;
 import net.sourceforge.pmd.lang.java.ast.JModifier;
@@ -33,6 +34,10 @@ import net.sourceforge.pmd.reporting.RuleContext;
  *   <li>{@code protectedFieldMessage} &ndash; custom violation message
  *       for protected fields (only used when {@code allowProtected}
  *       is {@code false}).</li>
+ *   <li>{@code ignoreModifiersOnInnerClassFields} &ndash; when {@code true},
+ *       all visibility modifier checks are skipped for fields declared inside
+ *       inner classes, overriding the other properties. Defaults to
+ *       {@code false}.</li>
  * </ul>
  */
 public class FieldVisibilityRule extends AbstractJavaRulechainRule {
@@ -61,17 +66,31 @@ public class FieldVisibilityRule extends AbstractJavaRulechainRule {
                     .defaultValue("Field ''{0}'' should be private instead of protected.")
                     .build();
 
+    private static final PropertyDescriptor<Boolean> IGNORE_MODIFIERS_ON_INNER_CLASS_FIELDS =
+            PropertyFactory.booleanProperty("ignoreModifiersOnInnerClassFields")
+                    .desc("When true, visibility modifier checks are skipped for fields declared in inner classes")
+                    .defaultValue(false)
+                    .build();
+
     public FieldVisibilityRule() {
         super(ASTFieldDeclaration.class);
         definePropertyDescriptor(ALLOW_PROTECTED);
         definePropertyDescriptor(MISSING_MODIFIER_MESSAGE);
         definePropertyDescriptor(PUBLIC_FIELD_MESSAGE);
         definePropertyDescriptor(PROTECTED_FIELD_MESSAGE);
+        definePropertyDescriptor(IGNORE_MODIFIERS_ON_INNER_CLASS_FIELDS);
     }
 
     @Override
     public Object visit(ASTFieldDeclaration node, Object data) {
         RuleContext ctx = asCtx(data);
+
+        if (getProperty(IGNORE_MODIFIERS_ON_INNER_CLASS_FIELDS)) {
+            ASTClassDeclaration enclosingClass = node.ancestors(ASTClassDeclaration.class).first();
+            if (enclosingClass != null && enclosingClass.ancestors(ASTClassDeclaration.class).first() != null) {
+                return data;
+            }
+        }
 
         boolean isPublic = node.hasModifiers(JModifier.PUBLIC);
         boolean isProtected = node.hasModifiers(JModifier.PROTECTED);
