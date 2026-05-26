@@ -302,5 +302,50 @@ class FieldVisibilityRuleTest {
                             + "}",
                     "not static final");
         }
+
+        @Test
+        void privateInnerClassFieldNotFlaggedWhenIgnored() {
+            setRuleProperty(rule, "ignoreModifiersOnInnerClassFields", true);
+            assertNoViolations(
+                    "class Outer {\n"
+                            + "    private class Inner {\n"
+                            + "        public int x;\n"
+                            + "    }\n"
+                            + "}");
+        }
+
+        @Test
+        void packagePrivateInnerClassFieldNotFlaggedWhenIgnored() {
+            setRuleProperty(rule, "ignoreModifiersOnInnerClassFields", true);
+            assertNoViolations(
+                    "class Outer {\n"
+                            + "    class Inner {\n"
+                            + "        public int x;\n"
+                            + "    }\n"
+                            + "}");
+        }
+
+        @Test
+        void protectedInnerClassFieldNotFlaggedWhenIgnored() {
+            setRuleProperty(rule, "ignoreModifiersOnInnerClassFields", true);
+            assertNoViolations(
+                    "class Outer {\n"
+                            + "    protected class Inner {\n"
+                            + "        public int x;\n"
+                            + "    }\n"
+                            + "}");
+        }
+
+        @Test
+        void publicInnerClassFieldStillFlaggedWhenIgnored() {
+            setRuleProperty(rule, "ignoreModifiersOnInnerClassFields", true);
+            assertHasViolation(
+                    "public class Outer {\n"
+                            + "    public class Inner {\n"
+                            + "        public int x;\n"
+                            + "    }\n"
+                            + "}",
+                    "not static final");
+        }
     }
 }

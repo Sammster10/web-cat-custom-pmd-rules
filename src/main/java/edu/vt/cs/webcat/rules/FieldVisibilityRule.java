@@ -36,7 +36,7 @@ import net.sourceforge.pmd.reporting.RuleContext;
  *       is {@code false}).</li>
  *   <li>{@code ignoreModifiersOnInnerClassFields} &ndash; when {@code true},
  *       all visibility modifier checks are skipped for fields declared inside
- *       inner classes, overriding the other properties. Defaults to
+ *       non-public inner classes, overriding the other properties. Defaults to
  *       {@code false}.</li>
  * </ul>
  */
@@ -68,7 +68,7 @@ public class FieldVisibilityRule extends AbstractJavaRulechainRule {
 
     private static final PropertyDescriptor<Boolean> IGNORE_MODIFIERS_ON_INNER_CLASS_FIELDS =
             PropertyFactory.booleanProperty("ignoreModifiersOnInnerClassFields")
-                    .desc("When true, visibility modifier checks are skipped for fields declared in inner classes")
+                    .desc("When true, visibility modifier checks are skipped for fields declared in non-public inner classes")
                     .defaultValue(false)
                     .build();
 
@@ -88,7 +88,12 @@ public class FieldVisibilityRule extends AbstractJavaRulechainRule {
         if (getProperty(IGNORE_MODIFIERS_ON_INNER_CLASS_FIELDS)) {
             ASTClassDeclaration enclosingClass = node.ancestors(ASTClassDeclaration.class).first();
             if (enclosingClass != null && enclosingClass.ancestors(ASTClassDeclaration.class).first() != null) {
-                return data;
+                ASTClassDeclaration innerClass = enclosingClass.ancestors(ASTClassDeclaration.class).first();
+                assert innerClass != null;
+
+                if (!innerClass.hasModifiers(JModifier.PUBLIC)) {
+                    return data;
+                }
             }
         }
 
