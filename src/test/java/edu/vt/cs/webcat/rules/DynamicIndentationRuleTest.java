@@ -806,6 +806,64 @@ class DynamicIndentationRuleTest {
     }
 
     // ---------------------------------------------------------------
+    // Inline / trailing line comments
+    // ---------------------------------------------------------------
+
+    @Nested
+    class InlineComments {
+        @Test
+        void blockOpeningBraceWithTrailingComment() {
+            assertNoViolations(fourSpaceClass(
+                    "    void foo() {",
+                    "        if (true) { //comment",
+                    "            if (true) {",
+                    "                //no-op",
+                    "            }",
+                    "        }",
+                    "    }"));
+        }
+
+        @Test
+        void methodCallContinuationPreservedWithTrailingComment() {
+            assertNoViolations(fourSpaceClass(
+                    "    void foo() {",
+                    "        bar(a, //comment",
+                    "            b);",
+                    "    }"));
+        }
+
+        @Test
+        void whileLoopOpeningBraceWithTrailingComment() {
+            assertNoViolations(fourSpaceClass(
+                    "    void foo() {",
+                    "        while (true) { //keep going",
+                    "            break;",
+                    "        }",
+                    "    }"));
+        }
+
+        @Test
+        void urlInStringLiteralNotTreatedAsComment() {
+            assertNoViolations(fourSpaceClass(
+                    "    void foo() {",
+                    "        String url = \"http://example.com\";",
+                    "        int x = 1;",
+                    "    }"));
+        }
+
+        @Test
+        void wrongIndentationStillFlaggedWhenCommentPresent() {
+            assertHasViolation(fourSpaceClass(
+                    "    void foo() {",
+                    "        if (true) { //comment",
+                    "        if (true) {",
+                    "            }",
+                    "        }",
+                    "    }"), "");
+        }
+    }
+
+    // ---------------------------------------------------------------
     // Javadoc
     // ---------------------------------------------------------------
 

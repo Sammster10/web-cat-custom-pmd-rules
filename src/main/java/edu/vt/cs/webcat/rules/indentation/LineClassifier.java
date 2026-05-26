@@ -12,7 +12,7 @@ public final class LineClassifier {
             "^\\s*(?:\\.|,|->|\\)|]|\\+[^+]?|-[^-]?|\\*|/[^/*]|%|&&|\\|\\||\\?|:(?!:))");
 
     private static final Pattern ENDS_WITH_CONTINUATION = Pattern.compile(
-            "(?:\\(|\\[|\\.|,|\\+|-|\\*|/|%|&&|\\|\\||\\?|:|->|\\{|=|>|<)\\s*(?://.*)?$");
+            "(?:\\(|\\[|\\.|,|\\+|-|\\*|/|%|&&|\\|\\||\\?|:|->|\\{|=|>|<)\\s*$");
 
     private static final Set<String> CLAUSE_KEYWORDS = new HashSet<>(
             Arrays.asList("extends", "implements", "permits", "throws"));
@@ -65,14 +65,15 @@ public final class LineClassifier {
     private static boolean isContinuationLine(LineInfo info, List<LineInfo> lines,
                                               int index,
                                               Set<Integer> multiLineStartLines) {
-        String trimmed = info.getText().trim();
+        String code = stripTrailingLineComment(info.getText());
+        String trimmed = code.trim();
 
         if (trimmed.equals(")") || trimmed.equals(");") || trimmed.equals("),")
                 || trimmed.equals("]") || trimmed.equals("];") || trimmed.equals("],")) {
             return false;
         }
 
-        if (STARTS_WITH_CONTINUATION_TOKEN.matcher(info.getText()).find()) {
+        if (STARTS_WITH_CONTINUATION_TOKEN.matcher(code).find()) {
             if (!trimmed.startsWith("}") && !trimmed.startsWith(");}")) {
                 return true;
             }
@@ -84,7 +85,8 @@ public final class LineClassifier {
 
         LineInfo prev = findPreviousNonBlankNonComment(lines, index);
         if (prev != null) {
-            String prevTrimmed = prev.getText().trim();
+            String prevCode = stripTrailingLineComment(prev.getText());
+            String prevTrimmed = prevCode.trim();
 
             if (ENDS_WITH_CONTINUATION.matcher(prevTrimmed).find()) {
                 if (!prevTrimmed.endsWith("{") || isWrappedConstruct(prevTrimmed)) {
@@ -101,11 +103,9 @@ public final class LineClassifier {
                 return true;
             }
 
-            if (startsWithClauseKeyword(trimmed)
+            return startsWithClauseKeyword(trimmed)
                     && !trimmed.startsWith("extends {")
-                    && !trimmed.startsWith("implements {")) {
-                return true;
-            }
+                    && !trimmed.startsWith("implements {");
         }
 
         return false;
@@ -370,6 +370,43 @@ public final class LineClassifier {
                 || node instanceof ASTForeachStatement
                 || node instanceof ASTSynchronizedStatement
                 || node instanceof ASTTryStatement;
+    }
+
+    private static String stripTrailingLineComment(String line) {
+        boolean inString = false;
+        boolean inChar = false;
+        boolean escaped = false;
+
+        for (int i = 0; i < line.length() - 1; i++) {
+            char current = line.charAt(i);
+            char next = line.charAt(i + 1);
+
+            if (escaped) {
+                escaped = false;
+                continue;
+            }
+
+            if ((inString || inChar) && current == '\\') {
+                escaped = true;
+                continue;
+            }
+
+            if (!inChar && current == '"') {
+                inString = !inString;
+                continue;
+            }
+
+            if (!inString && current == '\'') {
+                inChar = !inChar;
+                continue;
+            }
+
+            if (!inString && !inChar && current == '/' && next == '/') {
+                return line.substring(0, i);
+            }
+        }
+
+        return line;
     }
 }
 
