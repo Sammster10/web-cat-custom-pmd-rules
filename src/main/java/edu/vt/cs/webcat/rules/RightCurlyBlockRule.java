@@ -50,7 +50,7 @@ public class RightCurlyBlockRule extends AbstractJavaRulechainRule {
         TextRegion lineRegion = doc.createLineRange(line, line);
 
         Chars lineChars = doc.sliceOriginalText(lineRegion);
-        String lineText = lineChars.toString().trim();
+        String lineText = stripComments(lineChars.toString()).trim();
 
         if (!lineText.equals("}")) {
 
@@ -68,4 +68,41 @@ public class RightCurlyBlockRule extends AbstractJavaRulechainRule {
 
         return data;
     }
+
+    private static String stripComments(String line) {
+        StringBuilder result = new StringBuilder(line.length());
+
+        boolean inBlockComment = false;
+
+        for (int i = 0; i < line.length(); i++) {
+            char current = line.charAt(i);
+
+            if (inBlockComment) {
+                if (current == '*' && i + 1 < line.length() && line.charAt(i + 1) == '/') {
+                    inBlockComment = false;
+                    i++;
+                }
+                continue;
+            }
+
+            if (current == '/' && i + 1 < line.length()) {
+                char next = line.charAt(i + 1);
+
+                if (next == '/') {
+                    break;
+                }
+
+                if (next == '*') {
+                    inBlockComment = true;
+                    i++;
+                    continue;
+                }
+            }
+
+            result.append(current);
+        }
+
+        return result.toString();
+    }
+
 }

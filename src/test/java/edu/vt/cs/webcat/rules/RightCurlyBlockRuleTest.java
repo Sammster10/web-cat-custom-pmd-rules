@@ -213,7 +213,7 @@ class RightCurlyBlockRuleTest {
                     + "        } // end if\n"
                     + "    }\n"
                     + "}";
-            assertHasViolation(code, "Right curly brace must be alone on its line.");
+            assertNoViolations(code);
         }
 
         @Test
