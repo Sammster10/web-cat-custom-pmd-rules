@@ -34,6 +34,8 @@ public class WhitespaceAndPaddingRule extends AbstractJavaRulechainRule {
     private Set<Integer> binaryGtLtOffsets;
     private Set<Integer> binaryStarOffsets;
     private Set<Integer> binaryAmpOffsets;
+    private Set<Integer> ternaryQuestionOffsets;
+    private Set<Integer> wildcardQuestionOffsets;
     private Set<Integer> colonOffsets;
     private Set<Integer> methodParenOffsets;
     private Set<Integer> prefixUnaryOffsets;
@@ -63,6 +65,8 @@ public class WhitespaceAndPaddingRule extends AbstractJavaRulechainRule {
         binaryGtLtOffsets = new HashSet<>();
         binaryStarOffsets = new HashSet<>();
         binaryAmpOffsets = new HashSet<>();
+        ternaryQuestionOffsets = new HashSet<>();
+        wildcardQuestionOffsets = new HashSet<>();
         colonOffsets = new HashSet<>();
         methodParenOffsets = new HashSet<>();
         prefixUnaryOffsets = new HashSet<>();
@@ -100,6 +104,7 @@ public class WhitespaceAndPaddingRule extends AbstractJavaRulechainRule {
     private void collectAstContext(ASTCompilationUnit root) {
         collectGenericBrackets(root);
         collectBinaryOperators(root);
+        collectQuestionMarks(root);
         collectColons(root);
         collectMethodParens(root);
         collectUnaryOperators(root);
@@ -150,6 +155,43 @@ public class WhitespaceAndPaddingRule extends AbstractJavaRulechainRule {
                 }
             }
         }
+    }
+
+
+    private void collectQuestionMarks(ASTCompilationUnit root) {
+        for (ASTConditionalExpression ternary : root.descendants(ASTConditionalExpression.class)) {
+            JavaccToken hook = findTernaryQuestionToken(ternary);
+            if (hook != null) {
+                ternaryQuestionOffsets.add(startOf(hook));
+            }
+        }
+
+        for (ASTWildcardType wildcard : root.descendants(ASTWildcardType.class)) {
+            for (JavaccToken t : wildcard.tokens()) {
+                if (t.kind == JavaTokenKinds.HOOK) {
+                    wildcardQuestionOffsets.add(startOf(t));
+                    break;
+                }
+            }
+        }
+    }
+
+    private JavaccToken findTernaryQuestionToken(ASTConditionalExpression ternary) {
+        ASTExpression condition = ternary.getCondition();
+        ASTExpression thenBranch = ternary.getThenBranch();
+
+        JavaccToken conditionLast = condition.getLastToken();
+        JavaccToken thenFirst = thenBranch.getFirstToken();
+
+        JavaccToken t = conditionLast.getNext();
+        while (t != null && t != thenFirst) {
+            if (t.kind == JavaTokenKinds.HOOK) {
+                return t;
+            }
+            t = t.getNext();
+        }
+
+        return null;
     }
 
     private void collectColons(ASTCompilationUnit root) {
@@ -372,6 +414,17 @@ public class WhitespaceAndPaddingRule extends AbstractJavaRulechainRule {
             return;
         }
 
+        if (kind == JavaTokenKinds.HOOK) {
+            if (wildcardQuestionOffsets.contains(startOf(token))) {
+                return;
+            }
+            if (!ternaryQuestionOffsets.contains(startOf(token))) {
+                return;
+            }
+            checkBinaryOperatorSpacing(root, ctx, token, prev, next);
+            return;
+        }
+
         if (kind == JavaTokenKinds.COLON) {
             if (!colonOffsets.contains(startOf(token))) {
                 return;
@@ -403,8 +456,7 @@ public class WhitespaceAndPaddingRule extends AbstractJavaRulechainRule {
                 || kind == JavaTokenKinds.PLUSASSIGN || kind == JavaTokenKinds.MINUSASSIGN
                 || kind == JavaTokenKinds.STARASSIGN
                 || kind == JavaTokenKinds.ANDASSIGN || kind == JavaTokenKinds.ORASSIGN
-                || kind == JavaTokenKinds.XORASSIGN
-                || kind == JavaTokenKinds.HOOK;
+                || kind == JavaTokenKinds.XORASSIGN;
     }
 
     private void checkKeywordSpacing(ASTCompilationUnit root, RuleContext ctx,

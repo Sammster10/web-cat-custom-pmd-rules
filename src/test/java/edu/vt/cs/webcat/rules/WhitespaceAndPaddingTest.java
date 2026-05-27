@@ -17,7 +17,7 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-class WhitespaceAndPaddingRuleTest {
+class WhitespaceAndPaddingTest {
 
     private Rule rule;
 
@@ -469,6 +469,26 @@ class WhitespaceAndPaddingRuleTest {
         @Test
         void validDiamond() {
             assertNoViolations("import java.util.*;\nclass T { void m() { List<String> l = new ArrayList<>(); } }");
+        }
+
+        @Test
+        void validUnboundedWildcard() {
+            assertNoViolations("import java.util.*;\nclass T { Map<?, ?> map; }");
+        }
+
+        @Test
+        void validUpperBoundedWildcard() {
+            assertNoViolations("import java.util.*;\nclass T { List<? extends Number> list; }");
+        }
+
+        @Test
+        void validLowerBoundedWildcard() {
+            assertNoViolations("import java.util.*;\nclass T { List<? super Integer> list; }");
+        }
+
+        @Test
+        void validWildcardMethodParam() {
+            assertNoViolations("import java.util.*;\nclass T { void m(List<?> items) { } }");
         }
     }
 
