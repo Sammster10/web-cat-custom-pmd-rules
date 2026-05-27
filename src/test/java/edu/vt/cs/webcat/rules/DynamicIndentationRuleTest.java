@@ -3391,25 +3391,136 @@ class DynamicIndentationRuleTest {
     }
 
     @Nested
-    class GenericContinuationEdgeCases {
+    class GenericTypeParamInDeclarationHeader {
         @Test
-        void wrappedGenericFieldTypeCurrentlyReported() {
-            String code = fourSpaceClass(
-                    "    java.util.Map<String,",
-                    "            java.util.List<Integer>> map;");
+        void innerStaticClassWithTypeParamOpenBraceOnNextLine() {
+            String code = "class Outer {\n"
+                    + "    int a;\n"
+                    + "    int b;\n"
+                    + "    int c;\n"
+                    + "    int d;\n"
+                    + "    int e;\n"
+                    + "    int f;\n"
+                    + "    int g;\n"
+                    + "    int h;\n"
+                    + "    private static class Node<E>\n"
+                    + "    {\n"
+                    + "    }\n"
+                    + "}\n";
 
-            assertHasViolation(code, "indented incorrectly");
+            assertNoViolations(code);
         }
 
         @Test
-        void wrappedGenericMethodTypeParametersCurrentlyReported() {
-            String code = fourSpaceClass(
+        void topLevelClassWithTypeParamOpenBraceOnNextLine() {
+            String code = "class Foo<T>\n"
+                    + "{\n"
+                    + "    int a;\n"
+                    + "    int b;\n"
+                    + "    int c;\n"
+                    + "    int d;\n"
+                    + "    int e;\n"
+                    + "    int f;\n"
+                    + "    int g;\n"
+                    + "    int h;\n"
+                    + "}\n";
+
+            assertNoViolations(code);
+        }
+
+        @Test
+        void methodWithTypeParamOpenBraceOnNextLine() {
+            String code = "class T {\n"
+                    + "    int a;\n"
+                    + "    int b;\n"
+                    + "    int c;\n"
+                    + "    int d;\n"
+                    + "    int e;\n"
+                    + "    int f;\n"
+                    + "    int g;\n"
+                    + "    int h;\n"
+                    + "    <E> void process(E item)\n"
+                    + "    {\n"
+                    + "    }\n"
+                    + "}\n";
+
+            assertNoViolations(code);
+        }
+
+        @Test
+        void classWithMultipleTypeParamsOpenBraceOnNextLine() {
+            String code = "class Outer {\n"
+                    + "    int a;\n"
+                    + "    int b;\n"
+                    + "    int c;\n"
+                    + "    int d;\n"
+                    + "    int e;\n"
+                    + "    int f;\n"
+                    + "    int g;\n"
+                    + "    int h;\n"
+                    + "    static class Pair<A, B>\n"
+                    + "    {\n"
+                    + "    }\n"
+                    + "}\n";
+
+            assertNoViolations(code);
+        }
+
+        @Test
+        void innerClassWithBoundedTypeParamOpenBraceOnNextLine() {
+            String code = "class Outer {\n"
+                    + "    int a;\n"
+                    + "    int b;\n"
+                    + "    int c;\n"
+                    + "    int d;\n"
+                    + "    int e;\n"
+                    + "    int f;\n"
+                    + "    int g;\n"
+                    + "    int h;\n"
+                    + "    private static class Wrapper<T extends Comparable<T>>\n"
+                    + "    {\n"
+                    + "    }\n"
+                    + "}\n";
+
+            assertNoViolations(code);
+        }
+
+        @Test
+        void openBraceWronglyIndentedAfterGenericClassHeader() {
+            String code = "class Outer {\n"
+                    + "    int a;\n"
+                    + "    int b;\n"
+                    + "    int c;\n"
+                    + "    int d;\n"
+                    + "    int e;\n"
+                    + "    int f;\n"
+                    + "    int g;\n"
+                    + "    int h;\n"
+                    + "    private static class Node<E>\n"
+                    + "        {\n"
+                    + "        }\n"
+                    + "}\n";
+
+            assertHasViolation(code, "indented incorrectly");
+        }
+    }
+
+    @Nested
+    class GenericContinuationEdgeCases {
+        @Test
+        void wrappedGenericFieldType() {
+            assertNoViolations(fourSpaceClass(
+                    "    java.util.Map<String,",
+                    "            java.util.List<Integer>> map;"));
+        }
+
+        @Test
+        void wrappedGenericMethodTypeParameters() {
+            assertNoViolations(fourSpaceClass(
                     "    <T extends Comparable<T>,",
                     "            U extends Number> void m(T t, U u) {",
                     "        int x = 1;",
-                    "    }");
-
-            assertHasViolation(code, "indented incorrectly");
+                    "    }"));
         }
 
         @Test
@@ -3424,14 +3535,12 @@ class DynamicIndentationRuleTest {
         }
 
         @Test
-        void wrappedGenericIntersectionBoundCurrentlyReported() {
-            String code = fourSpaceClass(
+        void wrappedGenericIntersectionBound() {
+            assertNoViolations(fourSpaceClass(
                     "    <T extends Runnable",
                     "            & AutoCloseable> void m(T t) throws Exception {",
                     "        t.run();",
-                    "    }");
-
-            assertHasViolation(code, "indented incorrectly");
+                    "    }"));
         }
     }
 
@@ -3606,8 +3715,8 @@ class DynamicIndentationRuleTest {
         }
 
         @Test
-        void tryWithMultipleResourcesStatementDepthClosingParenCurrentlyReported() {
-            String code = fourSpaceClass(
+        void tryWithMultipleResourcesStatementDepthClosingParen() {
+            assertNoViolations(fourSpaceClass(
                     "    void m() throws Exception {",
                     "        try (",
                     "            java.io.InputStream in = null;",
@@ -3615,9 +3724,7 @@ class DynamicIndentationRuleTest {
                     "        ) {",
                     "            int x = 1;",
                     "        }",
-                    "    }");
-
-            assertHasViolation(code, "indented incorrectly");
+                    "    }"));
         }
 
         @Test
@@ -3639,16 +3746,14 @@ class DynamicIndentationRuleTest {
     @Nested
     class LabeledStatements {
         @Test
-        void labeledLoopCurrentlyReportedWhenIndentedLikeStatement() {
-            String code = fourSpaceClass(
+        void labeledLoopIndentedLikeStatement() {
+            assertNoViolations(fourSpaceClass(
                     "    void m() {",
                     "        outer:",
                     "        for (int i = 0; i < 10; i++) {",
                     "            break outer;",
                     "        }",
-                    "    }");
-
-            assertHasViolation(code, "indented incorrectly");
+                    "    }"));
         }
 
         @Test
@@ -3801,4 +3906,184 @@ class DynamicIndentationRuleTest {
             assertNoViolations(code);
         }
     }
+
+    // ---------------------------------------------------------------
+    // Ambiguous continuation tokens resolved by syntax/AST context
+    // ---------------------------------------------------------------
+
+    @Nested
+    class AmbiguousContinuationRegressionCases {
+        @Test
+        void nestedGenericCloseBeforeFieldNameDoesNotLookLikeShiftOperator() {
+            assertNoViolations(fourSpaceClass(
+                    "    java.util.Map<String, java.util.List<Integer>>",
+                    "            values;"));
+        }
+
+        @Test
+        void shiftOperatorContinuation() {
+            assertNoViolations(fourSpaceClass(
+                    "    int shift(int value) {",
+                    "        return value >>",
+                    "            1;",
+                    "    }"));
+        }
+
+        @Test
+        void unsignedShiftOperatorContinuation() {
+            assertNoViolations(fourSpaceClass(
+                    "    int shift(int value) {",
+                    "        return value >>>",
+                    "            1;",
+                    "    }"));
+        }
+
+        @Test
+        void greaterThanOrEqualContinuation() {
+            assertNoViolations(fourSpaceClass(
+                    "    boolean test(int a, int b) {",
+                    "        return a >=",
+                    "            b;",
+                    "    }"));
+        }
+
+        @Test
+        void lessThanOrEqualContinuation() {
+            assertNoViolations(fourSpaceClass(
+                    "    boolean test(int a, int b) {",
+                    "        return a <=",
+                    "            b;",
+                    "    }"));
+        }
+
+        @Test
+        void genericMethodInvocationContinuesAfterTypeArguments() {
+            assertNoViolations(fourSpaceClass(
+                    "    void m() {",
+                    "        this.<String>",
+                    "            consume(\"x\");",
+                    "    }"));
+        }
+
+        @Test
+        void wildcardExtendsBoundContinuation() {
+            assertNoViolations(fourSpaceClass(
+                    "    java.util.List<? extends",
+                    "            Number> values;"));
+        }
+
+        @Test
+        void wildcardSuperBoundContinuation() {
+            assertNoViolations(fourSpaceClass(
+                    "    java.util.List<? super",
+                    "            Integer> values;"));
+        }
+
+        @Test
+        void enhancedForColonContinuation() {
+            assertNoViolations(fourSpaceClass(
+                    "    void m(java.util.List<String> values) {",
+                    "        for (String value :",
+                    "            values) {",
+                    "            System.out.println(value);",
+                    "        }",
+                    "    }"));
+        }
+
+        @Test
+        void methodReferenceContinuationAfterDoubleColon() {
+            assertNoViolations(fourSpaceClass(
+                    "    void m() {",
+                    "        java.util.function.Function<String, Integer> f = Integer::",
+                    "            parseInt;",
+                    "    }"));
+        }
+
+        @Test
+        void lambdaArrowContinuation() {
+            assertNoViolations(fourSpaceClass(
+                    "    void m() {",
+                    "        java.util.function.Function<String, String> f = s ->",
+                    "            s.trim();",
+                    "    }"));
+        }
+
+        @Test
+        void switchArrowExpressionContinuation() {
+            assertNoViolations(fourSpaceClass(
+                    "    int m(int x) {",
+                    "        return switch (x) {",
+                    "            case 1 ->",
+                    "                10;",
+                    "            default ->",
+                    "                0;",
+                    "        };",
+                    "    }"));
+        }
+
+        @Test
+        void multiCatchPipeContinuation() {
+            assertNoViolations(fourSpaceClass(
+                    "    void m() {",
+                    "        try {",
+                    "            throw new java.io.IOException();",
+                    "        } catch (java.io.IOException |",
+                    "            IllegalArgumentException ex) {",
+                    "            System.out.println(ex.getMessage());",
+                    "        }",
+                    "    }"));
+        }
+
+        @Test
+        void annotationArrayValueContinuation() {
+            assertNoViolations(fourSpaceClass(
+                    "    @SuppressWarnings({",
+                    "        \"unchecked\",",
+                    "        \"rawtypes\"",
+                    "    })",
+                    "    void m() {",
+                    "        int x = 1;",
+                    "    }"));
+        }
+
+        @Test
+        void diamondConstructorInvocationContinuation() {
+            assertNoViolations(fourSpaceClass(
+                    "    void m() {",
+                    "        java.util.List<String> values = new java.util.ArrayList<>",
+                    "            ();",
+                    "    }"));
+        }
+
+        @Test
+        void comparisonOperatorStillRequiresContinuationIndent() {
+            String code = fourSpaceClass(
+                    "    boolean test(int a, int b) {",
+                    "        return a >",
+                    "        b;",
+                    "    }");
+
+            assertHasViolation(code, "indented incorrectly");
+        }
+
+        @Test
+        void genericCloseBeforeBlockBraceDoesNotRequireContinuationIndent() {
+            String code = "class Outer {\n"
+                    + "    int a;\n"
+                    + "    int b;\n"
+                    + "    int c;\n"
+                    + "    int d;\n"
+                    + "    int e;\n"
+                    + "    int f;\n"
+                    + "    int g;\n"
+                    + "    int h;\n"
+                    + "    static class Pair<A, B>\n"
+                    + "    {\n"
+                    + "    }\n"
+                    + "}\n";
+
+            assertNoViolations(code);
+        }
+    }
+
 }

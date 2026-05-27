@@ -38,28 +38,31 @@ public final class StructuralDepthModel {
             return;
         }
 
-        if (node instanceof ASTPackageDeclaration
-                || node instanceof ASTImportDeclaration) {
+        if (node instanceof ASTPackageDeclaration || node instanceof ASTImportDeclaration) {
             setStartLineDepth(depthMap, node, 0);
             return;
         }
 
         if (isTypeDeclaration(node)) {
-            setStartLineDepth(depthMap, node, depth);
+            int headerStart = declarationHeaderStartLine(node);
+            setLineRangeDepth(depthMap, headerStart, node.getBeginLine(), depth);
+
             Node body = findClassBody(node);
             if (body != null) {
                 int braceRegionEnd = body.getBeginLine();
-                for (int line = node.getBeginLine(); line <= braceRegionEnd; line++) {
+                for (int line = headerStart; line <= braceRegionEnd; line++) {
                     depthMap.put(line, depth);
                 }
                 setClosingBraceDepth(depthMap, body, depth);
             }
+
             walkTypeBody(node, depth + 1, depthMap);
             return;
         }
 
         if (node instanceof ASTEnumConstant) {
-            setStartLineDepth(depthMap, node, depth);
+            int headerStart = declarationHeaderStartLine(node);
+            setLineRangeDepth(depthMap, headerStart, node.getBeginLine(), depth);
             for (int i = 0; i < node.getNumChildren(); i++) {
                 Node child = node.getChild(i);
                 if (child instanceof ASTAnonymousClassDeclaration) {
@@ -70,32 +73,27 @@ public final class StructuralDepthModel {
             return;
         }
 
-        if (node instanceof ASTMethodDeclaration
-                || node instanceof ASTConstructorDeclaration) {
+        if (node instanceof ASTMethodDeclaration || node instanceof ASTConstructorDeclaration) {
             assignAnnotations(node, depth, depthMap);
-            setStartLineDepth(depthMap, node, depth);
-            Node block = null;
-            for (int i = 0; i < node.getNumChildren(); i++) {
-                Node child = node.getChild(i);
-                if (child instanceof ASTBlock) {
-                    block = child;
-                    break;
-                }
-            }
+            int headerStart = declarationHeaderStartLine(node);
+            setLineRangeDepth(depthMap, headerStart, node.getBeginLine(), depth);
+
+            Node block = findDirectBlock(node);
             if (block != null) {
-                for (int line = node.getBeginLine(); line < block.getBeginLine(); line++) {
+                for (int line = headerStart; line < block.getBeginLine(); line++) {
                     depthMap.put(line, depth);
                 }
                 walkBlock(block, depth, depthMap);
             } else {
-                setAllLinesDepth(depthMap, node, depth);
+                setLineRangeDepth(depthMap, headerStart, node.getEndLine(), depth);
             }
             return;
         }
 
         if (node instanceof ASTFieldDeclaration) {
             assignAnnotations(node, depth, depthMap);
-            setAllLinesDepth(depthMap, node, depth);
+            int headerStart = declarationHeaderStartLine(node);
+            setLineRangeDepth(depthMap, headerStart, node.getEndLine(), depth);
             assignFieldChildLines(node, depth, depthMap);
             walkChildExpressions(node, depth, depthMap);
             return;
@@ -119,6 +117,11 @@ public final class StructuralDepthModel {
 
         if (node instanceof ASTSwitchStatement || node instanceof ASTSwitchExpression) {
             walkSwitch(node, depth, depthMap);
+            return;
+        }
+
+        if (node instanceof ASTLabeledStatement) {
+            walkLabeledStatement(node, depth, depthMap);
             return;
         }
 
@@ -165,8 +168,8 @@ public final class StructuralDepthModel {
                                   Map<Integer, Integer> depthMap) {
         depthMap.put(block.getBeginLine(), ownerDepth);
         setClosingBraceDepth(depthMap, block, ownerDepth);
-        int statementDepth = ownerDepth + 1;
 
+        int statementDepth = ownerDepth + 1;
         for (int i = 0; i < block.getNumChildren(); i++) {
             Node child = block.getChild(i);
             if (child.getBeginLine() >= block.getBeginLine()) {
@@ -261,6 +264,9 @@ public final class StructuralDepthModel {
                     walkBlock(child, depth, depthMap);
                 } else if (child instanceof ASTCatchClause) {
                     setStartLineDepth(depthMap, child, depth);
+                    for (int line = child.getBeginLine(); line < firstBlockBeginLine(child); line++) {
+                        depthMap.put(line, depth);
+                    }
                     for (int j = 0; j < child.getNumChildren(); j++) {
                         Node grandchild = child.getChild(j);
                         if (grandchild instanceof ASTBlock) {
@@ -282,7 +288,8 @@ public final class StructuralDepthModel {
                         if (resource.getBeginLine() > node.getBeginLine()) {
                             depthMap.put(resource.getBeginLine(), depth + 1);
                         }
-                        for (int line = resource.getBeginLine() + 1; line <= resource.getEndLine(); line++) {
+                        for (int line = resource.getBeginLine() + 1;
+                             line <= resource.getEndLine(); line++) {
                             depthMap.put(line, depth);
                         }
                     }
@@ -299,8 +306,7 @@ public final class StructuralDepthModel {
                     for (int line = child.getEndLine() + 1; line <= node.getEndLine(); line++) {
                         depthMap.put(line, depth);
                     }
-                } else if (isStatement(child)
-                        && child.getBeginLine() != node.getBeginLine()) {
+                } else if (isStatement(child) && child.getBeginLine() != node.getBeginLine()) {
                     walk(child, depth + 1, depthMap);
                 }
             }
@@ -312,9 +318,30 @@ public final class StructuralDepthModel {
             Node child = node.getChild(i);
             if (child instanceof ASTBlock) {
                 walkBlock(child, depth, depthMap);
-            } else if (isStatement(child)
-                    && child.getBeginLine() != node.getBeginLine()) {
+            } else if (isStatement(child) && child.getBeginLine() != node.getBeginLine()) {
                 walk(child, depth + 1, depthMap);
+            }
+        }
+    }
+
+    private static int firstBlockBeginLine(Node node) {
+        int result = node.getEndLine() + 1;
+        for (int i = 0; i < node.getNumChildren(); i++) {
+            Node child = node.getChild(i);
+            if (child instanceof ASTBlock && child.getBeginLine() < result) {
+                result = child.getBeginLine();
+            }
+        }
+        return result;
+    }
+
+    private static void walkLabeledStatement(Node node, int depth,
+                                             Map<Integer, Integer> depthMap) {
+        setStartLineDepth(depthMap, node, depth);
+        for (int i = 0; i < node.getNumChildren(); i++) {
+            Node child = node.getChild(i);
+            if (child.getBeginLine() != node.getBeginLine()) {
+                walk(child, depth, depthMap);
             }
         }
     }
@@ -427,13 +454,22 @@ public final class StructuralDepthModel {
     }
 
     private static void setStartLineDepth(Map<Integer, Integer> depthMap,
-                                          Node node, int depth) {
+                                          Node node,
+                                          int depth) {
         depthMap.put(node.getBeginLine(), depth);
     }
 
     private static void setAllLinesDepth(Map<Integer, Integer> depthMap,
-                                         Node node, int depth) {
-        for (int line = node.getBeginLine(); line <= node.getEndLine(); line++) {
+                                         Node node,
+                                         int depth) {
+        setLineRangeDepth(depthMap, node.getBeginLine(), node.getEndLine(), depth);
+    }
+
+    private static void setLineRangeDepth(Map<Integer, Integer> depthMap,
+                                          int startLine,
+                                          int endLine,
+                                          int depth) {
+        for (int line = startLine; line <= endLine; line++) {
             depthMap.put(line, depth);
         }
     }
@@ -450,9 +486,9 @@ public final class StructuralDepthModel {
     }
 
     private static void setClosingBraceDepth(Map<Integer, Integer> depthMap,
-                                             Node node, int depth) {
-        int endLine = node.getEndLine();
-        depthMap.put(endLine, depth);
+                                             Node node,
+                                             int depth) {
+        depthMap.put(node.getEndLine(), depth);
     }
 
     private static boolean isTypeDeclaration(Node node) {
@@ -476,6 +512,35 @@ public final class StructuralDepthModel {
         return best;
     }
 
+    private static Node findDirectBlock(Node node) {
+        for (int i = 0; i < node.getNumChildren(); i++) {
+            Node child = node.getChild(i);
+            if (child instanceof ASTBlock) {
+                return child;
+            }
+        }
+        return null;
+    }
+
+    private static int declarationHeaderStartLine(Node node) {
+        int start = node.getBeginLine();
+        return minBeginLineOutsideModifierList(node, start);
+    }
+
+    private static int minBeginLineOutsideModifierList(Node node, int currentMin) {
+        for (int i = 0; i < node.getNumChildren(); i++) {
+            Node child = node.getChild(i);
+            if (child instanceof ASTModifierList) {
+                continue;
+            }
+            if (child.getBeginLine() > 0 && child.getBeginLine() < currentMin) {
+                currentMin = child.getBeginLine();
+            }
+            currentMin = minBeginLineOutsideModifierList(child, currentMin);
+        }
+        return currentMin;
+    }
+
     private static boolean isControlStructure(Node node) {
         return node instanceof ASTIfStatement
                 || node instanceof ASTWhileStatement
@@ -495,7 +560,7 @@ public final class StructuralDepthModel {
                 || node instanceof ASTContinueStatement
                 || node instanceof ASTYieldStatement
                 || node instanceof ASTAssertStatement
-                || node instanceof ASTExplicitConstructorInvocation;
+                || node instanceof ASTExplicitConstructorInvocation
+                || node instanceof ASTLabeledStatement;
     }
 }
-

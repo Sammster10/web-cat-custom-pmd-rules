@@ -9,13 +9,24 @@ import java.util.regex.Pattern;
 public final class LineClassifier {
 
     private static final Pattern STARTS_WITH_CONTINUATION_TOKEN = Pattern.compile(
-            "^\\s*(?:\\.|,|->|\\)|]|\\+[^+]?|-[^-]?|\\*|/[^/*]|%|&&|\\|\\||\\?|:(?!:))");
+            "^\\s*(?:\\.|,|->|\\)|]|\\+[^+]?|-[^-]?|\\*|/[^/*]|%|&&|\\|\\||\\||&|\\?|:(?!:))");
 
+    /*
+     * Deliberately excludes bare < and >. They are grammar-sensitive in Java:
+     * generic type syntax, generic method syntax, comparison operators, and
+     * shift operators all share angle-bracket characters.
+     */
     private static final Pattern ENDS_WITH_CONTINUATION = Pattern.compile(
-            "(?:\\(|\\[|\\.|,|\\+|-|\\*|/|%|&&|\\|\\||\\?|:|->|\\{|=|>|<)\\s*$");
+            "(?:\\(|\\[|\\.|,|\\+|-|\\*|/|%|&&|\\|\\||\\||&|\\?|:(?!:)|->|\\{|=|==|!=|>=|<=|>>>|>>)\\s*$");
+
+    private static final Pattern SIMPLE_LABEL_LINE = Pattern.compile(
+            "^\\s*[A-Za-z_$][A-Za-z0-9_$]*\\s*:\\s*$");
+
+    private static final Pattern SWITCH_LABEL_LINE = Pattern.compile(
+            "^\\s*(?:case\\b.*|default)\\s*:\\s*$");
 
     private static final Set<String> CLAUSE_KEYWORDS = new HashSet<>(
-            Arrays.asList("extends", "implements", "permits", "throws"));
+            Arrays.asList("extends", "implements", "permits", "throws", "super"));
 
     private LineClassifier() {
     }
@@ -26,7 +37,8 @@ public final class LineClassifier {
         Map<Integer, LineKind> result = new LinkedHashMap<>();
         Set<Integer> baseLines = collectBaseLines(rootNode);
         Set<Integer> multiLineStartLines = collectMultiLineConstructStartLines(rootNode);
-        Set<Integer> blockStartLines = collectBlockStartLines(rootNode);
+        Set<Integer> enumConstantStartLines = collectEnumConstantStartLines(rootNode);
+        AstLineFacts astFacts = AstLineFacts.from(rootNode);
 
         for (int i = 0; i < lines.size(); i++) {
             LineInfo info = lines.get(i);
@@ -43,11 +55,21 @@ public final class LineClassifier {
                 continue;
             }
 
-            boolean isCont = isContinuationLine(info, lines, i, multiLineStartLines);
+            if (isTryResourceClosingLine(info, lines, i)) {
+                result.put(lineNum, LineKind.IGNORE);
+                continue;
+            }
+
+            boolean isCont = isContinuationLine(info, lines, i, multiLineStartLines, astFacts);
+
+            if (enumConstantStartLines.contains(lineNum)
+                    && !startsWithExplicitContinuationToken(trimmedCode(info))) {
+                result.put(lineNum, LineKind.BASE);
+                continue;
+            }
+
             if (baseLines.contains(lineNum)) {
-                String trimmed = info.getText().trim();
-                if (isCont && blockStartLines.contains(lineNum)
-                        && !trimmed.equals("{")) {
+                if (isContinuationDespiteBaseLine(info, lines, i, isCont)) {
                     result.put(lineNum, LineKind.CONTINUATION);
                 } else {
                     result.put(lineNum, LineKind.BASE);
@@ -62,14 +84,45 @@ public final class LineClassifier {
         return result;
     }
 
-    private static boolean isContinuationLine(LineInfo info, List<LineInfo> lines,
+    private static boolean isContinuationDespiteBaseLine(LineInfo info,
+                                                         List<LineInfo> lines,
+                                                         int index,
+                                                         boolean isCont) {
+        if (!isCont) {
+            return false;
+        }
+
+        String trimmed = stripTrailingLineComment(info.getText()).trim();
+
+        if (isStandaloneClosingDelimiterLine(trimmed)) {
+            return false;
+        }
+
+        if (trimmed.startsWith("{") || trimmed.startsWith("}")) {
+            return false;
+        }
+
+        LineInfo prev = findPreviousNonBlankNonComment(lines, index);
+        if (prev == null) {
+            return true;
+        }
+
+        String prevTrimmed = stripTrailingLineComment(prev.getText()).trim();
+
+        return leadingSpaceCount(info.getText()) > leadingSpaceCount(prev.getText())
+                || startsWithExplicitContinuationToken(trimmed)
+                || previousLineRequiresContinuation(prevTrimmed);
+    }
+
+    private static boolean isContinuationLine(LineInfo info,
+                                              List<LineInfo> lines,
                                               int index,
-                                              Set<Integer> multiLineStartLines) {
+                                              Set<Integer> multiLineStartLines,
+                                              AstLineFacts astFacts) {
         String code = stripTrailingLineComment(info.getText());
         String trimmed = code.trim();
 
-        if (trimmed.equals(")") || trimmed.equals(");") || trimmed.equals("),")
-                || trimmed.equals("]") || trimmed.equals("];") || trimmed.equals("],")) {
+        if (isStandaloneClosingDelimiterLine(trimmed)) {
             return false;
         }
 
@@ -84,30 +137,105 @@ public final class LineClassifier {
         }
 
         LineInfo prev = findPreviousNonBlankNonComment(lines, index);
-        if (prev != null) {
-            String prevCode = stripTrailingLineComment(prev.getText());
-            String prevTrimmed = prevCode.trim();
-
-            if (ENDS_WITH_CONTINUATION.matcher(prevTrimmed).find()) {
-                if (!prevTrimmed.endsWith("{") || isWrappedConstruct(prevTrimmed)) {
-                    return true;
-                }
-            }
-
-            if (multiLineStartLines.contains(prev.getLineNumber())
-                    && !trimmed.startsWith("{") && !trimmed.startsWith("}")) {
-                return true;
-            }
-
-            if (endsWithClauseKeyword(prevTrimmed)) {
-                return true;
-            }
-
-            return startsWithClauseKeyword(trimmed)
-                    && !trimmed.startsWith("extends {")
-                    && !trimmed.startsWith("implements {");
+        if (prev == null) {
+            return false;
         }
 
+        String prevCode = stripTrailingLineComment(prev.getText());
+        String prevTrimmed = prevCode.trim();
+
+        if (SIMPLE_LABEL_LINE.matcher(prevCode).matches()
+                || SWITCH_LABEL_LINE.matcher(prevCode).matches()) {
+            return false;
+        }
+
+        if (isTryResourceListOpen(prevTrimmed)
+                || isNextTopLevelTryResource(lines, index, prevTrimmed)) {
+            return false;
+        }
+
+        if (prevTrimmed.endsWith(">")) {
+            if (astFacts.trailingGreaterThanClosesGeneric(prev)) {
+                return astFacts.genericCloseContinuesIntoLine(prev, info);
+            }
+
+            return true;
+        }
+
+        if (prevTrimmed.endsWith("<")) {
+            return true;
+        }
+
+        if (ENDS_WITH_CONTINUATION.matcher(prevTrimmed).find()) {
+            if (!prevTrimmed.endsWith("{") || isWrappedConstruct(prevTrimmed)) {
+                return true;
+            }
+        }
+
+        if (multiLineStartLines.contains(prev.getLineNumber())
+                && !trimmed.startsWith("{") && !trimmed.startsWith("}")) {
+            return true;
+        }
+
+        if (endsWithClauseKeyword(prevTrimmed)) {
+            return true;
+        }
+
+        return startsWithClauseKeyword(trimmed)
+                && !trimmed.startsWith("extends {")
+                && !trimmed.startsWith("implements {");
+    }
+
+    private static boolean isStandaloneClosingDelimiterLine(String trimmed) {
+        return trimmed.equals(")")
+                || trimmed.equals(");")
+                || trimmed.equals("),")
+                || trimmed.equals("]")
+                || trimmed.equals("];")
+                || trimmed.equals("],")
+                || trimmed.startsWith(") {")
+                || trimmed.startsWith(") throws ")
+                || trimmed.startsWith("] {");
+    }
+
+    private static boolean isTryResourceListOpen(String trimmed) {
+        return trimmed.equals("try (")
+                || trimmed.matches("try\\s*\\(");
+    }
+
+    private static boolean isNextTopLevelTryResource(List<LineInfo> lines,
+                                                     int currentIndex,
+                                                     String previousTrimmed) {
+        return previousTrimmed.endsWith(";")
+                && isInsideOpenTryResourceList(lines, currentIndex);
+    }
+
+    private static boolean isTryResourceClosingLine(LineInfo info,
+                                                    List<LineInfo> lines,
+                                                    int index) {
+        String trimmed = stripTrailingLineComment(info.getText()).trim();
+        return trimmed.startsWith(")") && isInsideOpenTryResourceList(lines, index);
+    }
+
+    private static boolean isInsideOpenTryResourceList(List<LineInfo> lines, int currentIndex) {
+        for (int i = currentIndex - 1; i >= 0; i--) {
+            LineInfo candidate = lines.get(i);
+            if (candidate.isBlank() || candidate.isCommentOnly()
+                    || candidate.isInsideBlockComment()
+                    || candidate.isInsideJavadoc()
+                    || candidate.isInsideTextBlock()) {
+                continue;
+            }
+
+            String trimmed = stripTrailingLineComment(candidate.getText()).trim();
+            if (isTryResourceListOpen(trimmed)) {
+                return true;
+            }
+            if (trimmed.contains("{") || trimmed.startsWith("}")
+                    || trimmed.startsWith(")")) {
+                return false;
+            }
+        }
         return false;
     }
 
@@ -136,6 +264,67 @@ public final class LineClassifier {
         return false;
     }
 
+    private static boolean previousLineRequiresContinuation(String trimmed) {
+        if (trimmed.isEmpty()) {
+            return false;
+        }
+
+        if (SWITCH_LABEL_LINE.matcher(trimmed).matches()
+                || SIMPLE_LABEL_LINE.matcher(trimmed).matches()) {
+            return false;
+        }
+
+        return trimmed.endsWith(",")
+                || trimmed.endsWith("(")
+                || trimmed.endsWith("[")
+                || trimmed.endsWith(".")
+                || trimmed.endsWith("+")
+                || trimmed.endsWith("-")
+                || trimmed.endsWith("*")
+                || trimmed.endsWith("/")
+                || trimmed.endsWith("%")
+                || trimmed.endsWith("&&")
+                || trimmed.endsWith("||")
+                || trimmed.endsWith("|")
+                || trimmed.endsWith("&")
+                || trimmed.endsWith("?")
+                || trimmed.endsWith(":")
+                || trimmed.endsWith("->")
+                || trimmed.endsWith("=")
+                || trimmed.endsWith("==")
+                || trimmed.endsWith("!=")
+                || trimmed.endsWith(">=")
+                || trimmed.endsWith("<=")
+                || trimmed.endsWith(">")
+                || trimmed.endsWith("<")
+                || trimmed.endsWith(">>")
+                || trimmed.endsWith(">>>");
+    }
+
+    private static boolean startsWithExplicitContinuationToken(String trimmed) {
+        return trimmed.startsWith(".")
+                || trimmed.startsWith(",")
+                || trimmed.startsWith("+")
+                || trimmed.startsWith("-")
+                || trimmed.startsWith("*")
+                || trimmed.startsWith("/")
+                || trimmed.startsWith("%")
+                || trimmed.startsWith("&&")
+                || trimmed.startsWith("||")
+                || trimmed.startsWith("|")
+                || trimmed.startsWith("&")
+                || trimmed.startsWith("?")
+                || trimmed.startsWith(":");
+    }
+
+    private static int leadingSpaceCount(String line) {
+        int count = 0;
+        while (count < line.length() && line.charAt(count) == ' ') {
+            count++;
+        }
+        return count;
+    }
+
     private static LineInfo findPreviousNonBlankNonComment(List<LineInfo> lines,
                                                            int currentIndex) {
         for (int i = currentIndex - 1; i >= 0; i--) {
@@ -156,6 +345,27 @@ public final class LineClassifier {
         return baseLines;
     }
 
+    private static Set<Integer> collectEnumConstantStartLines(Node root) {
+        Set<Integer> result = new HashSet<>();
+        collectEnumConstantStartLinesRecursive(root, result);
+        return result;
+    }
+
+    private static void collectEnumConstantStartLinesRecursive(Node node, Set<Integer> result) {
+        if (node instanceof ASTEnumConstant) {
+            result.add(declarationHeaderStartLine(node));
+        }
+
+        for (int i = 0; i < node.getNumChildren(); i++) {
+            collectEnumConstantStartLinesRecursive(node.getChild(i), result);
+        }
+    }
+
+    private static String trimmedCode(LineInfo info) {
+        return stripTrailingLineComment(info.getText()).trim();
+    }
+
+
     private static void collectBaseLinesRecursive(Node node, Set<Integer> baseLines) {
         if (node instanceof ASTPackageDeclaration
                 || node instanceof ASTImportDeclaration) {
@@ -169,7 +379,7 @@ public final class LineClassifier {
                 || node instanceof ASTFieldDeclaration
                 || node instanceof ASTEnumConstant
                 || node instanceof ASTInitializer) {
-            baseLines.add(node.getBeginLine());
+            baseLines.add(declarationHeaderStartLine(node));
             int endLine = node.getEndLine();
             if (endLine != node.getBeginLine()) {
                 baseLines.add(endLine);
@@ -274,17 +484,21 @@ public final class LineClassifier {
                 || node instanceof ASTConstructorDeclaration)
                 && node.getBeginLine() != node.getEndLine()) {
             Node body = findBlock(node);
-            if (body != null && body.getBeginLine() > node.getBeginLine()) {
-                for (int line = node.getBeginLine(); line < body.getBeginLine(); line++) {
-                    result.add(line);
+            if (body != null) {
+                int start = declarationHeaderStartLine(node);
+                if (body.getBeginLine() > start) {
+                    for (int line = start; line < body.getBeginLine(); line++) {
+                        result.add(line);
+                    }
                 }
             }
         }
 
         if (isTypeDeclaration(node)) {
+            int start = declarationHeaderStartLine(node);
             int bodyBeginLine = findTypeBodyBeginLine(node);
-            if (bodyBeginLine > node.getBeginLine()) {
-                for (int line = node.getBeginLine(); line < bodyBeginLine; line++) {
+            if (bodyBeginLine > start) {
+                for (int line = start; line < bodyBeginLine; line++) {
                     result.add(line);
                 }
             }
@@ -309,21 +523,6 @@ public final class LineClassifier {
                 || node instanceof ASTEnumDeclaration
                 || node instanceof ASTRecordDeclaration
                 || node instanceof ASTAnnotationTypeDeclaration;
-    }
-
-    private static Set<Integer> collectBlockStartLines(Node root) {
-        Set<Integer> result = new HashSet<>();
-        collectBlockStartLinesRecursive(root, result);
-        return result;
-    }
-
-    private static void collectBlockStartLinesRecursive(Node node, Set<Integer> result) {
-        if (node instanceof ASTBlock) {
-            result.add(node.getBeginLine());
-        }
-        for (int i = 0; i < node.getNumChildren(); i++) {
-            collectBlockStartLinesRecursive(node.getChild(i), result);
-        }
     }
 
     private static int findBodyEndLine(Node typeNode) {
@@ -354,6 +553,25 @@ public final class LineClassifier {
         return typeNode.getBeginLine();
     }
 
+    private static int declarationHeaderStartLine(Node node) {
+        int start = node.getBeginLine();
+        return minBeginLineOutsideModifierList(node, start);
+    }
+
+    private static int minBeginLineOutsideModifierList(Node node, int currentMin) {
+        for (int i = 0; i < node.getNumChildren(); i++) {
+            Node child = node.getChild(i);
+            if (child instanceof ASTModifierList) {
+                continue;
+            }
+            if (child.getBeginLine() > 0 && child.getBeginLine() < currentMin) {
+                currentMin = child.getBeginLine();
+            }
+            currentMin = minBeginLineOutsideModifierList(child, currentMin);
+        }
+        return currentMin;
+    }
+
     private static boolean isStatement(Node node) {
         return node instanceof ASTLocalVariableDeclaration
                 || node instanceof ASTExpressionStatement
@@ -369,7 +587,8 @@ public final class LineClassifier {
                 || node instanceof ASTForStatement
                 || node instanceof ASTForeachStatement
                 || node instanceof ASTSynchronizedStatement
-                || node instanceof ASTTryStatement;
+                || node instanceof ASTTryStatement
+                || node instanceof ASTLabeledStatement;
     }
 
     private static String stripTrailingLineComment(String line) {
@@ -408,5 +627,241 @@ public final class LineClassifier {
 
         return line;
     }
-}
 
+    private static int lastNonWhitespaceColumn1Based(String line) {
+        for (int i = line.length() - 1; i >= 0; i--) {
+            if (!Character.isWhitespace(line.charAt(i))) {
+                return i + 1;
+            }
+        }
+        return -1;
+    }
+
+    private static boolean startsWithBlockDelimiter(String trimmedLine) {
+        return trimmedLine.startsWith("{") || trimmedLine.startsWith("}");
+    }
+
+    private static final class AstLineFacts {
+
+        private final List<GenericAngleNode> genericAngleNodes;
+
+        private AstLineFacts(List<GenericAngleNode> genericAngleNodes) {
+            this.genericAngleNodes = genericAngleNodes;
+        }
+
+        static AstLineFacts from(Node root) {
+            List<GenericAngleNode> genericAngleNodes = new ArrayList<>();
+            collectGenericAngleNodes(root, genericAngleNodes);
+            return new AstLineFacts(genericAngleNodes);
+        }
+
+        boolean trailingGreaterThanClosesGeneric(LineInfo line) {
+            String code = stripTrailingLineComment(line.getText());
+            int trailingGreaterColumn = lastNonWhitespaceColumn1Based(code);
+            int closeRunLength = trailingGreaterThanRunLength(code);
+
+            if (trailingGreaterColumn < 1 || closeRunLength == 0) {
+                return false;
+            }
+
+            int lineNo = line.getLineNumber();
+
+            for (GenericAngleNode generic : genericAngleNodes) {
+                if (generic.closesAtTrailingGreaterThan(
+                        lineNo,
+                        trailingGreaterColumn,
+                        closeRunLength,
+                        code)) {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        boolean genericCloseContinuesIntoLine(LineInfo previousLine, LineInfo currentLine) {
+            String previousCode = stripTrailingLineComment(previousLine.getText());
+            int trailingGreaterColumn = lastNonWhitespaceColumn1Based(previousCode);
+            int closeRunLength = trailingGreaterThanRunLength(previousCode);
+
+            if (trailingGreaterColumn < 1 || closeRunLength == 0) {
+                return false;
+            }
+
+            int previousLineNumber = previousLine.getLineNumber();
+            int currentLineNumber = currentLine.getLineNumber();
+            String currentTrimmed = stripTrailingLineComment(currentLine.getText()).trim();
+
+            if (startsWithBlockDelimiter(currentTrimmed)) {
+                return false;
+            }
+
+            if (leadingSpaceCount(currentLine.getText()) > leadingSpaceCount(previousLine.getText())) {
+                return true;
+            }
+
+            for (GenericAngleNode generic : genericAngleNodes) {
+                if (!generic.closesAtTrailingGreaterThan(
+                        previousLineNumber,
+                        trailingGreaterColumn,
+                        closeRunLength,
+                        previousCode)) {
+                    continue;
+                }
+
+                if (genericEnclosingSyntaxSpansIntoLine(generic.node, currentLineNumber)) {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static boolean genericEnclosingSyntaxSpansIntoLine(Node genericNode,
+                                                                   int currentLineNumber) {
+            Node node = genericNode.getParent();
+
+            while (node != null) {
+                if (node.getBeginLine() <= genericNode.getBeginLine()
+                        && node.getEndLine() >= currentLineNumber
+                        && isContinuationOwner(node)) {
+                    return true;
+                }
+
+                node = node.getParent();
+            }
+
+            return false;
+        }
+
+        private static boolean isContinuationOwner(Node node) {
+            return isStatement(node)
+                    || isTypeDeclaration(node)
+                    || node instanceof ASTFieldDeclaration
+                    || node instanceof ASTMethodDeclaration
+                    || node instanceof ASTConstructorDeclaration
+                    || node instanceof ASTEnumConstant
+                    || node instanceof ASTAnnotation
+                    || node instanceof ASTAssignmentExpression
+                    || node instanceof ASTConditionalExpression
+                    || node instanceof ASTInfixExpression
+                    || node instanceof ASTUnaryExpression
+                    || node instanceof ASTCastExpression
+                    || node instanceof ASTMethodCall
+                    || node instanceof ASTMethodReference
+                    || node instanceof ASTConstructorCall
+                    || node instanceof ASTExplicitConstructorInvocation
+                    || node instanceof ASTClassType
+                    || node instanceof ASTArrayType
+                    || node instanceof ASTTypeExpression
+                    || node instanceof ASTVariableDeclarator
+                    || node instanceof ASTFormalParameter
+                    || node instanceof ASTReceiverParameter
+                    || node instanceof ASTRecordComponent
+                    || node instanceof ASTExtendsList
+                    || node instanceof ASTImplementsList
+                    || node instanceof ASTPermitsList
+                    || node instanceof ASTThrowsList;
+        }
+
+        private static void collectGenericAngleNodes(Node node, List<GenericAngleNode> out) {
+            if (node instanceof ASTTypeArguments || node instanceof ASTTypeParameters) {
+                if (hasUsefulLocation(node)) {
+                    out.add(new GenericAngleNode(node));
+                }
+            }
+
+            for (int i = 0; i < node.getNumChildren(); i++) {
+                collectGenericAngleNodes(node.getChild(i), out);
+            }
+        }
+
+        private static boolean hasUsefulLocation(Node node) {
+            return node.getBeginLine() > 0
+                    && node.getBeginColumn() > 0
+                    && node.getEndLine() > 0
+                    && node.getEndColumn() > 0;
+        }
+    }
+
+    private static final class GenericAngleNode {
+
+        private final Node node;
+        private final int beginLine;
+        private final int beginColumn;
+        private final int endLine;
+        private final int endColumn;
+
+        private GenericAngleNode(Node node) {
+            this.node = node;
+            this.beginLine = node.getBeginLine();
+            this.beginColumn = node.getBeginColumn();
+            this.endLine = node.getEndLine();
+            this.endColumn = node.getEndColumn();
+        }
+
+        private boolean closesAtTrailingGreaterThan(int line,
+                                                    int trailingGreaterColumn,
+                                                    int closeRunLength,
+                                                    String codeLine) {
+            if (endLine != line) {
+                return false;
+            }
+
+            if (beginLine == line && beginColumn > trailingGreaterColumn) {
+                return false;
+            }
+
+            int firstGreaterColumnInRun = trailingGreaterColumn - closeRunLength + 1;
+
+            if (endColumn >= firstGreaterColumnInRun - 1
+                    && endColumn <= trailingGreaterColumn + 1) {
+                return true;
+            }
+
+            if (endColumn < firstGreaterColumnInRun) {
+                return onlyWhitespaceBetweenColumns(
+                        codeLine,
+                        endColumn + 1,
+                        firstGreaterColumnInRun - 1);
+            }
+
+            return false;
+        }
+    }
+
+    private static int trailingGreaterThanRunLength(String line) {
+        int i = line.length() - 1;
+
+        while (i >= 0 && Character.isWhitespace(line.charAt(i))) {
+            i--;
+        }
+
+        int count = 0;
+        while (i >= 0 && line.charAt(i) == '>') {
+            count++;
+            i--;
+        }
+
+        return count;
+    }
+
+    private static boolean onlyWhitespaceBetweenColumns(String line,
+                                                        int startColumnInclusive,
+                                                        int endColumnInclusive) {
+        if (endColumnInclusive < startColumnInclusive) {
+            return true;
+        }
+
+        int startIndex = Math.max(0, startColumnInclusive - 1);
+        int endIndex = Math.min(line.length() - 1, endColumnInclusive - 1);
+
+        for (int i = startIndex; i <= endIndex; i++) {
+            if (!Character.isWhitespace(line.charAt(i))) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+}
