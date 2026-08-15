@@ -262,6 +262,113 @@ class RightCurlyBlockRuleTest {
         }
     }
 
+    @Nested
+    class SameLineBraceTransitionConfiguration {
+
+        @Test
+        void allowsBraceElseBraceWhenEnabled() {
+            setRuleProperty(rule, "allowSameLineBraceTransitions", true);
+            String code = "class T {\n"
+                    + "    void m() {\n"
+                    + "        if (true) {\n"
+                    + "            int x = 1;\n"
+                    + "        } else {\n"
+                    + "            int y = 2;\n"
+                    + "        }\n"
+                    + "    }\n"
+                    + "}";
+            assertNoViolations(code);
+        }
+
+        @Test
+        void allowsElseIfChainWhenEnabled() {
+            setRuleProperty(rule, "allowSameLineBraceTransitions", true);
+            String code = "class T {\n"
+                    + "    void m(int x) {\n"
+                    + "        if (x == 1) {\n"
+                    + "            x++;\n"
+                    + "        } else if (x == 2) {\n"
+                    + "            x--;\n"
+                    + "        } else {\n"
+                    + "            x = 0;\n"
+                    + "        }\n"
+                    + "    }\n"
+                    + "}";
+            assertNoViolations(code);
+        }
+
+        @Test
+        void allowsEntireIfElseOnOneLineWhenEnabled() {
+            setRuleProperty(rule, "allowSameLineBraceTransitions", true);
+            String code = "class T {\n"
+                    + "    void m() {\n"
+                    + "        if (true) { int x = 1; } else { int y = 2; }\n"
+                    + "    }\n"
+                    + "}";
+            assertNoViolations(code);
+        }
+
+        @Test
+        void sameLineTransitionsRemainDisallowedWhenDisabled() {
+            setRuleProperty(rule, "allowSameLineBraceTransitions", false);
+            String code = "class T {\n"
+                    + "    void m() {\n"
+                    + "        if (true) {\n"
+                    + "        } else {\n"
+                    + "        }\n"
+                    + "    }\n"
+                    + "}";
+            assertHasViolation(code, "Right curly brace must be alone on its line.");
+        }
+
+        @Test
+        void allowsTryCatchFinallyWhenEnabled() {
+            setRuleProperty(rule, "allowSameLineBraceTransitions", true);
+            String code = "class T {\n"
+                    + "    void m() {\n"
+                    + "        try {\n"
+                    + "        } catch (Exception e) {\n"
+                    + "        } finally {\n"
+                    + "        }\n"
+                    + "    }\n"
+                    + "}";
+            assertNoViolations(code);
+        }
+
+        @Test
+        void allowsEntireTryCatchFinallyOnOneLineWhenEnabled() {
+            setRuleProperty(rule, "allowSameLineBraceTransitions", true);
+            String code = "class T {\n"
+                    + "    void m() {\n"
+                    + "        try { int x = 1; } catch (Exception e) { int y = 2; } finally { int z = 3; }\n"
+                    + "    }\n"
+                    + "}";
+            assertNoViolations(code);
+        }
+
+        @Test
+        void allowsDoWhileWhenEnabled() {
+            setRuleProperty(rule, "allowSameLineBraceTransitions", true);
+            String code = "class T {\n"
+                    + "    void m() {\n"
+                    + "        do {\n"
+                    + "            int x = 1;\n"
+                    + "        } while (false);\n"
+                    + "    }\n"
+                    + "}";
+            assertNoViolations(code);
+        }
+
+        @Test
+        void unrelatedSameLineBraceRemainsDisallowedWhenEnabled() {
+            setRuleProperty(rule, "allowSameLineBraceTransitions", true);
+            String code = "class T {\n"
+                    + "    void m() { }\n"
+                    + "}";
+            assertHasViolation(code, "Right curly brace must be alone on its line.");
+        }
+    }
+
     // ================================================================== //
     //  Custom messages                                                   //
     // ================================================================== //

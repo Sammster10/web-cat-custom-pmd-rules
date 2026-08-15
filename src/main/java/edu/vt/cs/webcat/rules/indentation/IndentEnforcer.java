@@ -38,13 +38,22 @@ public final class IndentEnforcer {
                                             + "for depth %d using inferred unit %d, found %d.",
                                     expected, depth, indentUnit, actual)));
                 }
-            } else if (kind == LineKind.CONTINUATION) {
+            } else if (kind == LineKind.CONTINUATION
+                    || kind == LineKind.BASE_OR_CONTINUATION) {
+                int base = depth * indentUnit;
+                if (kind == LineKind.BASE_OR_CONTINUATION && actual == base) {
+                    continue;
+                }
+
                 int minimum = (depth + 1) * indentUnit;
                 if (actual < minimum) {
+                    String expectation = kind == LineKind.BASE_OR_CONTINUATION
+                            ? String.format("either %d spaces or at least %d spaces", base, minimum)
+                            : String.format("at least %d spaces", minimum);
                     violations.add(new IndentViolation(lineNum,
-                            String.format("Incorrect continuation indentation: expected at least "
-                                            + "%d spaces using inferred unit %d, found %d.",
-                                    minimum, indentUnit, actual)));
+                            String.format("Incorrect continuation indentation: expected %s "
+                                            + "using inferred unit %d, found %d.",
+                                    expectation, indentUnit, actual)));
                 } else if (actual % indentUnit != 0) {
                     int lower = (actual / indentUnit) * indentUnit;
                     int upper = lower + indentUnit;

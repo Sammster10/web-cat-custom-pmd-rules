@@ -168,6 +168,47 @@ class IndentEnforcerTest {
     }
 
     @Nested
+    class BaseOrContinuationLineEnforcement {
+        @Test
+        void baseIndentationIsAllowed() {
+            List<LineInfo> lines = Collections.singletonList(line(1, 8));
+            Map<Integer, LineKind> kinds = Collections.singletonMap(
+                    1, LineKind.BASE_OR_CONTINUATION);
+            StructuralDepthModel model = new StructuralDepthModel(
+                    Collections.singletonMap(1, 2));
+
+            List<IndentViolation> violations = IndentEnforcer.enforce(lines, kinds, model, 4);
+            assertTrue(violations.isEmpty());
+        }
+
+        @Test
+        void continuationIndentationIsAllowed() {
+            List<LineInfo> lines = Collections.singletonList(line(1, 12));
+            Map<Integer, LineKind> kinds = Collections.singletonMap(
+                    1, LineKind.BASE_OR_CONTINUATION);
+            StructuralDepthModel model = new StructuralDepthModel(
+                    Collections.singletonMap(1, 2));
+
+            List<IndentViolation> violations = IndentEnforcer.enforce(lines, kinds, model, 4);
+            assertTrue(violations.isEmpty());
+        }
+
+        @Test
+        void indentationBetweenBaseAndContinuationIsRejected() {
+            List<LineInfo> lines = Collections.singletonList(line(1, 10));
+            Map<Integer, LineKind> kinds = Collections.singletonMap(
+                    1, LineKind.BASE_OR_CONTINUATION);
+            StructuralDepthModel model = new StructuralDepthModel(
+                    Collections.singletonMap(1, 2));
+
+            List<IndentViolation> violations = IndentEnforcer.enforce(lines, kinds, model, 4);
+            assertEquals(1, violations.size());
+            assertTrue(violations.get(0).getMessage()
+                    .contains("either 8 spaces or at least 12 spaces"));
+        }
+    }
+
+    @Nested
     class IgnoredLines {
         @Test
         void ignoreLineNotEnforced() {

@@ -509,7 +509,8 @@ public class WhitespaceAndPaddingRule extends AbstractJavaRulechainRule {
             }
             if (next != null && !next.isEof() && sameLine(token, next) && !hasWhitespaceBetween(token, next)
                     && next.kind != JavaTokenKinds.SEMICOLON && next.kind != JavaTokenKinds.COMMA
-                    && next.kind != JavaTokenKinds.RPAREN && next.kind != JavaTokenKinds.RBRACE) {
+                    && next.kind != JavaTokenKinds.RPAREN && next.kind != JavaTokenKinds.RBRACE
+                    && next.kind != JavaTokenKinds.DOT) {
                 reportViolation(ctx, root, token, "Whitespace required after '}'.");
             }
         }

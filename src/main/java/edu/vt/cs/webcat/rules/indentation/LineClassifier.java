@@ -62,6 +62,11 @@ public final class LineClassifier {
 
             boolean isCont = isContinuationLine(info, lines, i, multiLineStartLines, astFacts);
 
+            if (isCont && astFacts.startsChainAfterAnonymousClass(lineNum)) {
+                result.put(lineNum, LineKind.BASE_OR_CONTINUATION);
+                continue;
+            }
+
             if (enumConstantStartLines.contains(lineNum)
                     && !startsWithExplicitContinuationToken(trimmedCode(info))) {
                 result.put(lineNum, LineKind.BASE);
@@ -644,15 +649,24 @@ public final class LineClassifier {
     private static final class AstLineFacts {
 
         private final List<GenericAngleNode> genericAngleNodes;
+        private final Set<Integer> anonymousClassChainStartLines;
 
-        private AstLineFacts(List<GenericAngleNode> genericAngleNodes) {
+        private AstLineFacts(List<GenericAngleNode> genericAngleNodes,
+                             Set<Integer> anonymousClassChainStartLines) {
             this.genericAngleNodes = genericAngleNodes;
+            this.anonymousClassChainStartLines = anonymousClassChainStartLines;
         }
 
         static AstLineFacts from(Node root) {
             List<GenericAngleNode> genericAngleNodes = new ArrayList<>();
             collectGenericAngleNodes(root, genericAngleNodes);
-            return new AstLineFacts(genericAngleNodes);
+            Set<Integer> anonymousClassChainStartLines = new HashSet<>();
+            collectAnonymousClassChainStartLines(root, anonymousClassChainStartLines);
+            return new AstLineFacts(genericAngleNodes, anonymousClassChainStartLines);
+        }
+
+        boolean startsChainAfterAnonymousClass(int lineNumber) {
+            return anonymousClassChainStartLines.contains(lineNumber);
         }
 
         boolean trailingGreaterThanClosesGeneric(LineInfo line) {
@@ -773,6 +787,24 @@ public final class LineClassifier {
 
             for (int i = 0; i < node.getNumChildren(); i++) {
                 collectGenericAngleNodes(node.getChild(i), out);
+            }
+        }
+
+        private static void collectAnonymousClassChainStartLines(Node node, Set<Integer> out) {
+            if (node instanceof ASTAnonymousClassDeclaration) {
+                ASTAnonymousClassDeclaration anonymousClass =
+                        (ASTAnonymousClassDeclaration) node;
+                var closingBrace = anonymousClass.getLastToken();
+                var next = closingBrace.getNext();
+                if (next != null && ".".equals(next.getImage())
+                        && next.getReportLocation().getStartLine()
+                        > closingBrace.getReportLocation().getStartLine()) {
+                    out.add(next.getReportLocation().getStartLine());
+                }
+            }
+
+            for (int i = 0; i < node.getNumChildren(); i++) {
+                collectAnonymousClassChainStartLines(node.getChild(i), out);
             }
         }
 

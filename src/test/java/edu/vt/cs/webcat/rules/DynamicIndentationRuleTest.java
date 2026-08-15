@@ -2022,6 +2022,49 @@ class DynamicIndentationRuleTest {
                     "        };",
                     "    }"));
         }
+
+        @Test
+        void methodChainAfterAnonymousClassMayAlignWithCreationExpression() {
+            assertNoViolations(fourSpaceClass(
+                    "    void example() {",
+                    "        new Thread() {",
+                    "            @Override",
+                    "            public void run() {",
+                    "                // do something",
+                    "            }",
+                    "        }",
+                    "        .start();",
+                    "    }"));
+        }
+
+        @Test
+        void methodChainAfterAnonymousClassMayUseContinuationIndentation() {
+            assertNoViolations(fourSpaceClass(
+                    "    void example() {",
+                    "        new Thread() {",
+                    "            @Override",
+                    "            public void run() {",
+                    "                // do something",
+                    "            }",
+                    "        }",
+                    "            .start();",
+                    "    }"));
+        }
+
+        @Test
+        void methodChainAfterAnonymousClassRejectsIndentBetweenAllowedStyles() {
+            String code = fourSpaceClass(
+                    "    void example() {",
+                    "        new Thread() {",
+                    "            @Override",
+                    "            public void run() {",
+                    "                // do something",
+                    "            }",
+                    "        }",
+                    "          .start();",
+                    "    }");
+            assertHasViolation(code, "either 8 spaces or at least 12 spaces");
+        }
     }
 
     // ---------------------------------------------------------------

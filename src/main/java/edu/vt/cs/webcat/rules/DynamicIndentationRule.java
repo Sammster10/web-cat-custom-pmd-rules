@@ -25,12 +25,14 @@ import net.sourceforge.pmd.reporting.RuleContext;
  * the owning construct, not the inner content.</p>
  *
  * <h4>Line classification</h4>
- * <p>Each line is classified as BASE, CONTINUATION, or IGNORE. BASE lines
- * start a structural element (declaration, statement, case label, closing
- * brace, else/catch/finally, standalone annotation). CONTINUATION lines
- * continue a prior construct (wrapped arguments, chained calls, binary
- * expressions, etc.). IGNORE lines include blanks, comments, block comment
- * interiors, Javadoc interiors, and text block interiors.</p>
+ * <p>Each line is classified as BASE, BASE_OR_CONTINUATION, CONTINUATION, or
+ * IGNORE. BASE lines start a structural element (declaration, statement,
+ * case label, closing brace, else/catch/finally, standalone annotation).
+ * BASE_OR_CONTINUATION permits either alignment for a chained call following
+ * an anonymous class body. CONTINUATION lines continue a prior construct
+ * (wrapped arguments, other chained calls, binary expressions, etc.). IGNORE
+ * lines include blanks, comments, block comment interiors, Javadoc interiors,
+ * and text block interiors.</p>
  *
  * <h4>Indent inference</h4>
  * <p>The base indent unit N is inferred from high-signal BASE lines where
@@ -179,7 +181,8 @@ public class DynamicIndentationRule extends AbstractRule {
 
     private static String extractExpected(String message) {
         java.util.regex.Matcher m = java.util.regex.Pattern
-                .compile("expected (\\d+|at least \\d+) spaces").matcher(message);
+                .compile("expected (either \\d+ spaces or at least \\d+|\\d+|at least \\d+) spaces")
+                .matcher(message);
         if (m.find()) {
             return m.group(1);
         }

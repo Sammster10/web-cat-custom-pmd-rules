@@ -344,6 +344,44 @@ class WhitespaceAndPaddingTest {
     }
 
     @Nested
+    class BraceSpacing {
+        @Test
+        void validAnonymousClassMethodChainAfterClosingBrace() {
+            assertNoViolations("class T {\n"
+                    + "  void m() {\n"
+                    + "    new Thread() {\n"
+                    + "      @Override\n"
+                    + "      public void run() {\n"
+                    + "        m();\n"
+                    + "      }\n"
+                    + "    }.start();\n"
+                    + "  }\n"
+                    + "}");
+        }
+
+        @Test
+        void validAnonymousClassMethodChainWithDotOnNextLine() {
+            assertNoViolations("class T {\n"
+                    + "  void m() {\n"
+                    + "    new Thread() {\n"
+                    + "      @Override\n"
+                    + "      public void run() {\n"
+                    + "        m();\n"
+                    + "      }\n"
+                    + "    }\n"
+                    + "    .start();\n"
+                    + "  }\n"
+                    + "}");
+        }
+
+        @Test
+        void closingBraceStillRequiresWhitespaceBeforeElse() {
+            assertHasViolation("class T { void m() { if (true) { }else { } } }",
+                    "Whitespace required after '}'");
+        }
+    }
+
+    @Nested
     class MethodConstructorParenPadding {
         @Test
         void validMethodDeclaration() {
