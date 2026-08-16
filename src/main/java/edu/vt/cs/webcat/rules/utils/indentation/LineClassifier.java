@@ -1,4 +1,4 @@
-package edu.vt.cs.webcat.rules.indentation;
+package edu.vt.cs.webcat.rules.utils.indentation;
 
 import net.sourceforge.pmd.lang.ast.Node;
 import net.sourceforge.pmd.lang.java.ast.*;

@@ -1,6 +1,5 @@
 package edu.vt.cs.webcat.rules;
 
-
 import edu.vt.cs.webcat.rules.utils.TestFrameworksUtil;
 import net.sourceforge.pmd.lang.java.ast.ASTClassDeclaration;
 import net.sourceforge.pmd.lang.java.ast.ASTMethodDeclaration;
@@ -17,11 +16,12 @@ import java.util.regex.Pattern;
  */
 public class TestClassWithoutTestCasesRule extends AbstractJavaRulechainRule {
 
-    private static final PropertyDescriptor<Pattern> TEST_CLASS_PATTERN = PropertyFactory.regexProperty("testClassPattern")
-            .defaultValue("^(?:.*\\.)?Test[^\\.]*$|^(?:.*\\.)?.*Tests?$|^(?:.*\\.)?.*TestCase$")
-            .desc("Test class name pattern to identify test classes by their fully qualified name. "
-                    + "An empty pattern disables test class detection by name. Since PMD 6.51.0.")
-            .build();
+    private static final PropertyDescriptor<Pattern> TEST_CLASS_PATTERN =
+            PropertyFactory.regexProperty("testClassPattern")
+                    .defaultValue("^(?:.*\\.)?Test[^\\.]*$|^(?:.*\\.)?.*Tests?$|^(?:.*\\.)?.*TestCase$")
+                    .desc("Test class name pattern to identify test classes by their fully qualified name. "
+                            + "An empty pattern disables test class detection by name.")
+                    .build();
 
     public TestClassWithoutTestCasesRule() {
         super(ASTClassDeclaration.class);
@@ -30,7 +30,9 @@ public class TestClassWithoutTestCasesRule extends AbstractJavaRulechainRule {
 
     @Override
     public Object visit(ASTClassDeclaration node, Object data) {
-        if (TestFrameworksUtil.isJUnit3Class(node) || TestFrameworksUtil.isJUnit5NestedClass(node) || isTestClassByPattern(node)) {
+        if (TestFrameworksUtil.isJUnit3Class(node)
+                || TestFrameworksUtil.isJUnit5NestedClass(node)
+                || isTestClassByPattern(node)) {
             boolean hasTests =
                     node.getDeclarations(ASTMethodDeclaration.class)
                             .any(TestFrameworksUtil::isTestMethod);
@@ -41,7 +43,7 @@ public class TestClassWithoutTestCasesRule extends AbstractJavaRulechainRule {
                 asCtx(data).addViolation(node, node.getSimpleName());
             }
         }
-        return null;
+        return data;
     }
 
     private boolean isTestClassByPattern(ASTClassDeclaration node) {

@@ -17,24 +17,26 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-class WhitespaceAndPaddingTest {
+class SpacingRulesTest {
 
-    private Rule rule;
+    private List<Rule> rules;
 
     @BeforeEach
     void setUp() {
-        rule = new WhitespaceAndPaddingRule();
-        rule.setLanguage(JavaLanguageModule.getInstance());
-        rule.setMessage("WhitespaceAndPadding violation");
+        useRules(
+                new OperatorSpacingRule(),
+                new DelimiterSpacingRule(),
+                new BraceSpacingRule());
     }
 
     private List<RuleViolation> runRule(String code) {
         PMDConfiguration config = new PMDConfiguration();
         config.setDefaultLanguageVersion(
                 JavaLanguageModule.getInstance().getVersion("17"));
-        RuleSet ruleSet = RuleSet.forSingleRule(rule);
         try (PmdAnalysis analysis = PmdAnalysis.create(config)) {
-            analysis.addRuleSet(ruleSet);
+            for (Rule rule : rules) {
+                analysis.addRuleSet(RuleSet.forSingleRule(rule));
+            }
             analysis.files().addFile(
                     TextFile.forCharSeq(code,
                             FileId.fromPathLikeString("Test.java"),
@@ -58,13 +60,6 @@ class WhitespaceAndPaddingTest {
         assertTrue(found,
                 String.format("Expected violation containing '%s' but found: %s",
                         messageFragment, violations));
-    }
-
-    private void assertViolationCount(String code, int expected) {
-        List<RuleViolation> violations = runRule(code);
-        assertEquals(expected, violations.size(),
-                String.format("Expected %d violations but found %d: %s",
-                        expected, violations.size(), violations));
     }
 
     @Nested
@@ -176,6 +171,12 @@ class WhitespaceAndPaddingTest {
             assertHasViolation("class T { void m() { String s = \"hello\" .toString(); } }",
                     "No horizontal whitespace allowed before '.'");
         }
+
+        @Test
+        void invalidSpaceAfterDot() {
+            assertHasViolation("class T { void m() { String s = \"hello\". toString(); } }",
+                    "No horizontal whitespace allowed after '.'");
+        }
     }
 
     @Nested
@@ -208,6 +209,11 @@ class WhitespaceAndPaddingTest {
         @Test
         void validSemicolonEndOfFile() {
             assertNoViolations("class T { void m() { return; } }");
+        }
+
+        @Test
+        void validEmptyForHeader() {
+            assertNoViolations("class T { void m() { for (;;) { break; } } }");
         }
     }
 
@@ -340,6 +346,33 @@ class WhitespaceAndPaddingTest {
         @Test
         void validSynchronizedKeyword() {
             assertNoViolations("class T { void m() { synchronized (this) { } } }");
+        }
+
+        @Test
+        void validSwitchKeywordAndLabels() {
+            assertNoViolations("class T { int m(int x) { switch (x) { "
+                    + "case 1: return 1; default: return 0; } } }");
+        }
+
+        @Test
+        void invalidSwitchWithoutKeywordSpace() {
+            assertHasViolation("class T { int m(int x) { switch(x) { "
+                            + "default: return 0; } } }",
+                    "Whitespace required after keyword 'switch'");
+        }
+
+        @Test
+        void invalidWhitespaceBeforeSwitchLabelColon() {
+            assertHasViolation("class T { int m(int x) { switch (x) { "
+                            + "case 1 : return 1; default: return 0; } } }",
+                    "No whitespace allowed before ':' in a label");
+        }
+
+        @Test
+        void invalidMissingWhitespaceAfterSwitchLabelColon() {
+            assertHasViolation("class T { int m(int x) { switch (x) { "
+                            + "case 1:return 1; default: return 0; } } }",
+                    "Whitespace required after ':' in a label");
         }
     }
 
@@ -584,6 +617,53 @@ class WhitespaceAndPaddingTest {
         @Test
         void methodReferenceNotFlagged() {
             assertNoViolations("import java.util.function.*;\nclass T { void m() { Function<String, Integer> f = Integer::parseInt; } }");
+        }
+
+        @Test
+        void validLabeledStatementColon() {
+            assertNoViolations("class T { void m() { outer: for (;;) { break outer; } } }");
+        }
+
+        @Test
+        void invalidWhitespaceBeforeLabeledStatementColon() {
+            assertHasViolation("class T { void m() { outer : for (;;) { break outer; } } }",
+                    "No whitespace allowed before ':' in a label");
+        }
+    }
+
+    @Nested
+    class SeparatedRules {
+
+        @Test
+        void operatorRuleOwnsOperatorChecks() {
+            useRules(new OperatorSpacingRule());
+            assertHasViolation("class T { void m() { int x = 1+2; } }",
+                    "Whitespace required");
+            assertNoViolations("class T { void m(){ } }");
+        }
+
+        @Test
+        void delimiterRuleOwnsDelimiterChecks() {
+            useRules(new DelimiterSpacingRule());
+            assertHasViolation("class T { void m(int first,int second) { } }", "','");
+            assertNoViolations("class T { void m() { int x=1+2; } }");
+        }
+
+        @Test
+        void braceRuleOwnsBraceChecks() {
+            useRules(new BraceSpacingRule());
+            assertHasViolation("class T { void m(){ } }", "Whitespace required before '{'");
+            assertNoViolations("class T { void m() { int x=1+2; } }");
+        }
+
+    }
+
+    private void useRules(Rule... selectedRules) {
+        rules = List.of(selectedRules);
+        for (Rule selectedRule : rules) {
+            selectedRule.setLanguage(JavaLanguageModule.getInstance());
+            selectedRule.setMessage(
+                    selectedRule.getClass().getSimpleName() + " violation");
         }
     }
 }

@@ -141,6 +141,9 @@ public class HiddenFieldRule extends AbstractJavaRulechainRule {
         }
         for (ASTLocalVariableDeclaration localVar :
                 node.getBody().descendants(ASTLocalVariableDeclaration.class)) {
+            if (!belongsToExecutable(localVar, node)) {
+                continue;
+            }
             for (ASTVariableId varId : localVar.getVarIds()) {
                 if (fieldNames.contains(varId.getName())) {
                     String message = java.text.MessageFormat.format(
@@ -149,6 +152,16 @@ public class HiddenFieldRule extends AbstractJavaRulechainRule {
                 }
             }
         }
+    }
+
+    private boolean belongsToExecutable(ASTLocalVariableDeclaration variable,
+                                        ASTExecutableDeclaration executable) {
+        ASTExecutableDeclaration nearestExecutable =
+                variable.ancestors(ASTExecutableDeclaration.class).first();
+        ASTTypeDeclaration nearestType =
+                variable.ancestors(ASTTypeDeclaration.class).first();
+        return nearestExecutable == executable
+                && nearestType == executable.getEnclosingType();
     }
 
     private boolean isSetter(ASTMethodDeclaration method) {

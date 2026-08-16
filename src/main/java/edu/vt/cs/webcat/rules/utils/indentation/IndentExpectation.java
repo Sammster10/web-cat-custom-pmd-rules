@@ -1,6 +1,6 @@
-package edu.vt.cs.webcat.rules.indentation;
+package edu.vt.cs.webcat.rules.utils.indentation;
 
-public class IndentExpectation {
+public final class IndentExpectation {
 
     private final int structuralDepth;
     private final LineKind kind;

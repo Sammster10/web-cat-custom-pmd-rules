@@ -87,6 +87,96 @@ class StrictJavadocRuleTest {
     }
 
     @Nested
+    class ConfigurationBehavior {
+
+        @Test
+        void typeJavadocRequirementCanBeDisabled() {
+            setRuleProperty(rule, "requireTypeJavadoc", false);
+            assertNoViolations("class T { }");
+        }
+
+        @Test
+        void executableJavadocRequirementCanBeDisabled() {
+            setRuleProperty(rule, "requireExecutableJavadoc", false);
+            assertNoViolations(wrapInClass("    void run() { }"));
+        }
+
+        @Test
+        void fieldJavadocRequirementCanBeDisabled() {
+            setRuleProperty(rule, "requireFieldJavadoc", false);
+            assertNoViolations(wrapInClass("    int value;"));
+        }
+
+        @Test
+        void parameterTagRequirementCanBeDisabled() {
+            setRuleProperty(rule, "requireParameterTags", false);
+            assertNoViolations(wrapInClass(
+                    "    /** Runs. */\n"
+                            + "    void run(int value) { }"));
+        }
+
+        @Test
+        void returnTagRequirementCanBeDisabled() {
+            setRuleProperty(rule, "requireReturnTags", false);
+            assertNoViolations(wrapInClass(
+                    "    /** Returns a value. */\n"
+                            + "    int value() { return 1; }"));
+        }
+
+        @Test
+        void returnTagOnVoidCheckCanBeDisabled() {
+            setRuleProperty(rule, "forbidReturnOnVoid", false);
+            assertNoViolations(wrapInClass(
+                    "    /**\n"
+                            + "     * Runs.\n"
+                            + "     * @return nothing\n"
+                            + "     */\n"
+                            + "    void run() { }"));
+        }
+
+        @Test
+        void authorRequirementCanBeDisabled() {
+            setRuleProperty(rule, "requireAuthorTag", false);
+            assertNoViolations("/**\n"
+                    + " * A class.\n"
+                    + " * @version 1.0\n"
+                    + " */\n"
+                    + "class T { }");
+        }
+
+        @Test
+        void versionRequirementCanBeDisabled() {
+            setRuleProperty(rule, "requireVersionTag", false);
+            assertNoViolations("/**\n"
+                    + " * A class.\n"
+                    + " * @author Alex\n"
+                    + " */\n"
+                    + "class T { }");
+        }
+
+        @Test
+        void unusedTypeTagCheckCanBeDisabled() {
+            setRuleProperty(rule, "checkUnusedTypeTags", false);
+            assertNoViolations("/**\n"
+                    + " * A class.\n"
+                    + " * @author Alex\n"
+                    + " * @version 1.0\n"
+                    + " * @throws Exception never\n"
+                    + " */\n"
+                    + "class T { }");
+        }
+
+        @Test
+        void inheritedDocumentationAllowanceCanBeDisabled() {
+            setRuleProperty(rule, "allowInheritedDocumentation", false);
+            assertHasViolation(wrapInClass(
+                    "    @Override\n"
+                            + "    public String toString() { return \"\"; }"),
+                    "must have Javadoc");
+        }
+    }
+
+    @Nested
     class TypeDeclarations {
         @Test
         void validClassJavadoc() {

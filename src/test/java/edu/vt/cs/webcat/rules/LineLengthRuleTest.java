@@ -153,6 +153,13 @@ class LineLengthRuleTest {
             String longLine = "class T { String s = \"" + "a".repeat(30) + "\"; }";
             assertHasViolation(longLine, "Line exceeds maximum length of 40");
         }
+
+        @Test
+        void supplementaryUnicodeCharacterCountsOnce() {
+            setRuleProperty(rule, "maxLength", 10);
+            assertNoViolations("// " + "😀".repeat(7));
+            assertHasViolation("// " + "😀".repeat(8), "11 characters");
+        }
     }
 
     @Nested

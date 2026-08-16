@@ -1,9 +1,9 @@
-package edu.vt.cs.webcat.rules.indentation;
+package edu.vt.cs.webcat.rules.utils.indentation;
 
 import java.util.Collections;
 import java.util.Map;
 
-public class InferenceResult {
+public final class InferenceResult {
 
     private final boolean success;
     private final Integer inferredUnit;

@@ -28,6 +28,6 @@ public class JUnitStaticSuiteRule extends AbstractJavaRulechainRule {
                 asCtx(data).addViolation(suiteMethod);
             }
         }
-        return null;
+        return data;
     }
 }

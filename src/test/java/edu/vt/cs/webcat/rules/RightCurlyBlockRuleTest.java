@@ -260,6 +260,29 @@ class RightCurlyBlockRuleTest {
                     + "}";
             assertHasViolation(code, "Right curly brace must be alone on its line.");
         }
+
+        @Test
+        void sameLineNumberIsReportedInEachFile() {
+            PMDConfiguration config = new PMDConfiguration();
+            config.setThreads(1);
+            config.setDefaultLanguageVersion(
+                    JavaLanguageModule.getInstance().getVersion("17"));
+
+            try (PmdAnalysis analysis = PmdAnalysis.create(config)) {
+                analysis.addRuleSet(RuleSet.forSingleRule(rule));
+                analysis.files().addFile(TextFile.forCharSeq(
+                        "class First { void m() { } }",
+                        FileId.fromPathLikeString("First.java"),
+                        JavaLanguageModule.getInstance().getVersion("17")));
+                analysis.files().addFile(TextFile.forCharSeq(
+                        "class Second { void m() { } }",
+                        FileId.fromPathLikeString("Second.java"),
+                        JavaLanguageModule.getInstance().getVersion("17")));
+
+                Report report = analysis.performAnalysisAndCollectReport();
+                assertEquals(2, report.getViolations().size());
+            }
+        }
     }
 
     @Nested
@@ -367,6 +390,7 @@ class RightCurlyBlockRuleTest {
                     + "}";
             assertHasViolation(code, "Right curly brace must be alone on its line.");
         }
+
     }
 
     // ================================================================== //

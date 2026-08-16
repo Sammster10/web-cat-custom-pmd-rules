@@ -1,4 +1,4 @@
-package edu.vt.cs.webcat.rules.utils;
+package edu.vt.cs.webcat.rules.utils.indentation;
 
 import java.util.regex.Pattern;
 
@@ -45,9 +45,14 @@ public final class IndentationUtils {
     }
 
     public static DepthDelta computeDepthDelta(String strippedLine) {
+        return computeDepthDelta(strippedLine, false);
+    }
+
+    public static DepthDelta computeDepthDelta(String strippedLine,
+                                               boolean startInsideBlockComment) {
         int netChange = 0;
         boolean insideLineComment = false;
-        boolean insideBlockComment = false;
+        boolean insideBlockComment = startInsideBlockComment;
 
         for (int index = 0; index < strippedLine.length(); index++) {
             char character = strippedLine.charAt(index);
@@ -170,46 +175,5 @@ public final class IndentationUtils {
         return result.toString();
     }
 
-    public static class DepthDelta {
-        private final int netChange;
-        private final boolean endsInsideBlockComment;
-
-        public DepthDelta(int netChange, boolean endsInsideBlockComment) {
-            this.netChange = netChange;
-            this.endsInsideBlockComment = endsInsideBlockComment;
-        }
-
-        public int getNetChange() {
-            return netChange;
-        }
-
-        public boolean getEndsInsideBlockComment() {
-            return endsInsideBlockComment;
-        }
-    }
-
-    public static class SwitchContext {
-        private final int braceDepth;
-        private final int previousFrozenBonus;
-        private final int previousActiveCaseBonus;
-
-        public SwitchContext(int braceDepth, int previousFrozenBonus, int previousActiveCaseBonus) {
-            this.braceDepth = braceDepth;
-            this.previousFrozenBonus = previousFrozenBonus;
-            this.previousActiveCaseBonus = previousActiveCaseBonus;
-        }
-
-        public int getBraceDepth() {
-            return braceDepth;
-        }
-
-        public int getPreviousFrozenBonus() {
-            return previousFrozenBonus;
-        }
-
-        public int getPreviousActiveCaseBonus() {
-            return previousActiveCaseBonus;
-        }
-    }
 }
 

@@ -6,7 +6,6 @@ import net.sourceforge.pmd.lang.document.TextRegion;
 import net.sourceforge.pmd.lang.ast.impl.javacc.JavaccToken;
 import net.sourceforge.pmd.lang.java.ast.ASTBlock;
 import net.sourceforge.pmd.lang.java.ast.ASTCatchClause;
-import net.sourceforge.pmd.lang.java.ast.ASTCompilationUnit;
 import net.sourceforge.pmd.lang.java.ast.ASTDoStatement;
 import net.sourceforge.pmd.lang.java.ast.ASTFinallyClause;
 import net.sourceforge.pmd.lang.java.ast.ASTIfStatement;
@@ -16,9 +15,6 @@ import net.sourceforge.pmd.lang.java.rule.AbstractJavaRulechainRule;
 import net.sourceforge.pmd.properties.PropertyDescriptor;
 import net.sourceforge.pmd.properties.PropertyFactory;
 import net.sourceforge.pmd.reporting.RuleContext;
-
-import java.util.HashSet;
-import java.util.Set;
 
 public class RightCurlyBlockRule extends AbstractJavaRulechainRule {
 
@@ -34,8 +30,6 @@ public class RightCurlyBlockRule extends AbstractJavaRulechainRule {
                     .defaultValue(false)
                     .build();
 
-    private final Set<Integer> reportedLines = new HashSet<>();
-
     public RightCurlyBlockRule() {
         super(ASTBlock.class);
         definePropertyDescriptor(MESSAGE);
@@ -43,14 +37,7 @@ public class RightCurlyBlockRule extends AbstractJavaRulechainRule {
     }
 
     @Override
-    public Object visit(ASTCompilationUnit node, Object data) {
-        reportedLines.clear();
-        return data;
-    }
-
-    @Override
     public Object visit(ASTBlock node, Object data) {
-
         var brace = node.getLastToken();
 
         if (brace.kind != JavaTokenKinds.RBRACE) {
@@ -66,19 +53,13 @@ public class RightCurlyBlockRule extends AbstractJavaRulechainRule {
         String lineText = stripComments(lineChars.toString()).trim();
 
         if (!lineText.equals("}") && !isAllowedSameLineBraceTransition(node, brace)) {
-
-            if (reportedLines.add(line)) {
-
-                RuleContext ctx = asCtx(data);
-
-                ctx.addViolationWithPosition(
-                        node.getRoot(),
-                        brace,
-                        getProperty(MESSAGE)
-                );
-            }
+            RuleContext context = asCtx(data);
+            context.addViolationWithPosition(
+                    node.getRoot(),
+                    brace,
+                    getProperty(MESSAGE)
+            );
         }
-
         return data;
     }
 

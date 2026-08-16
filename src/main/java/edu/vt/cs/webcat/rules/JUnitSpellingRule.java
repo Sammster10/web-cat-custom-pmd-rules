@@ -22,7 +22,7 @@ public class JUnitSpellingRule extends AbstractJavaRulechainRule {
                     .filter(this::isViolation)
                     .forEach(it -> asCtx(data).addViolation(it));
         }
-        return null;
+        return data;
     }
 
     private boolean isViolation(ASTMethodDeclaration method) {
@@ -30,8 +30,7 @@ public class JUnitSpellingRule extends AbstractJavaRulechainRule {
             return false;
         }
         String name = method.getName();
-        return !"setUp".equals(name) && "setup".equalsIgnoreCase(name)
-                || !"tearDown".equals(name) && "teardown".equalsIgnoreCase(name);
-
+        return (!"setUp".equals(name) && "setup".equalsIgnoreCase(name))
+                || (!"tearDown".equals(name) && "teardown".equalsIgnoreCase(name));
     }
 }

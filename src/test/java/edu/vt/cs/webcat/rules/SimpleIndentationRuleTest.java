@@ -208,6 +208,7 @@ class SimpleIndentationRuleTest {
                     + "}";
             assertNoViolations(code);
         }
+
     }
 
     @Nested
@@ -264,6 +265,30 @@ class SimpleIndentationRuleTest {
                     + "  /*\n"
                     + "      * inside block\n"
                     + "  */\n"
+                    + "    int x;\n"
+                    + "}";
+            assertNoViolations(code);
+        }
+
+        @Test
+        void unstarredMultiLineBlockCommentKeepsCommentState() {
+            String code = "class T {\n"
+                    + "    /*\n"
+                    + "not prefixed with a star {\n"
+                    + "still part of the comment }\n"
+                    + "    */\n"
+                    + "    int x;\n"
+                    + "}";
+            assertNoViolations(code);
+        }
+
+        @Test
+        void tabInsideLongBlockCommentIsIgnored() {
+            String code = "class T {\n"
+                    + "    /*\n"
+                    + "ordinary comment line\n"
+                    + "\tstill comment text\n"
+                    + "    */\n"
                     + "    int x;\n"
                     + "}";
             assertNoViolations(code);

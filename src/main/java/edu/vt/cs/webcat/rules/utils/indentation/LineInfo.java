@@ -1,6 +1,6 @@
-package edu.vt.cs.webcat.rules.indentation;
+package edu.vt.cs.webcat.rules.utils.indentation;
 
-public class LineInfo {
+public final class LineInfo {
 
     private final int lineNumber;
     private final String text;

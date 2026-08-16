@@ -1,4 +1,4 @@
-package edu.vt.cs.webcat.rules.indentation;
+package edu.vt.cs.webcat.rules.utils.indentation;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -33,10 +33,13 @@ public final class IndentEnforcer {
             if (kind == LineKind.BASE) {
                 int expected = depth * indentUnit;
                 if (actual != expected) {
-                    violations.add(new IndentViolation(lineNum,
+                    violations.add(new IndentViolation(
+                            lineNum,
                             String.format("Incorrect indentation: expected %d spaces "
                                             + "for depth %d using inferred unit %d, found %d.",
-                                    expected, depth, indentUnit, actual)));
+                                    expected, depth, indentUnit, actual),
+                            Integer.toString(expected),
+                            actual));
                 }
             } else if (kind == LineKind.CONTINUATION
                     || kind == LineKind.BASE_OR_CONTINUATION) {
@@ -50,17 +53,23 @@ public final class IndentEnforcer {
                     String expectation = kind == LineKind.BASE_OR_CONTINUATION
                             ? String.format("either %d spaces or at least %d spaces", base, minimum)
                             : String.format("at least %d spaces", minimum);
-                    violations.add(new IndentViolation(lineNum,
+                    violations.add(new IndentViolation(
+                            lineNum,
                             String.format("Incorrect continuation indentation: expected %s "
                                             + "using inferred unit %d, found %d.",
-                                    expectation, indentUnit, actual)));
+                                    expectation, indentUnit, actual),
+                            expectation,
+                            actual));
                 } else if (actual % indentUnit != 0) {
                     int lower = (actual / indentUnit) * indentUnit;
                     int upper = lower + indentUnit;
-                    violations.add(new IndentViolation(lineNum,
+                    violations.add(new IndentViolation(
+                            lineNum,
                             String.format("Incorrect continuation indentation: expected a "
                                             + "multiple of %d spaces (e.g. %d or %d), found %d.",
-                                    indentUnit, lower, upper, actual)));
+                                    indentUnit, lower, upper, actual),
+                            "a multiple of " + indentUnit,
+                            actual));
                 }
             }
         }

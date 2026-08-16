@@ -1,10 +1,13 @@
 package edu.vt.cs.webcat.rules;
 
-import edu.vt.cs.webcat.rules.utils.IndentationUtils;
+import edu.vt.cs.webcat.rules.utils.indentation.DepthDelta;
+import edu.vt.cs.webcat.rules.utils.indentation.IndentationUtils;
+import edu.vt.cs.webcat.rules.utils.indentation.SwitchContext;
 import net.sourceforge.pmd.lang.ast.Node;
 import net.sourceforge.pmd.lang.document.Chars;
 import net.sourceforge.pmd.lang.document.TextDocument;
 import net.sourceforge.pmd.lang.rule.AbstractRule;
+import net.sourceforge.pmd.properties.NumericConstraints;
 import net.sourceforge.pmd.properties.PropertyDescriptor;
 import net.sourceforge.pmd.properties.PropertyFactory;
 import net.sourceforge.pmd.reporting.RuleContext;
@@ -52,6 +55,7 @@ public class SimpleIndentationRule extends AbstractRule {
     private static final PropertyDescriptor<Integer> INDENT_SIZE =
             PropertyFactory.intProperty("indentSize")
                     .desc("Number of spaces per indentation level. Must be between 1 and 16.")
+                    .require(NumericConstraints.inRange(1, 16))
                     .defaultValue(4)
                     .build();
 
@@ -95,7 +99,7 @@ public class SimpleIndentationRule extends AbstractRule {
         int currentDepth = 0;
         boolean insideBlockComment = false;
 
-        Deque<IndentationUtils.SwitchContext> switchStack = new ArrayDeque<>();
+        Deque<SwitchContext> switchStack = new ArrayDeque<>();
         int frozenBonus = 0;
         int activeCaseBonus = 0;
 
@@ -122,7 +126,7 @@ public class SimpleIndentationRule extends AbstractRule {
             if (leadingClosers > 0) {
                 while (!switchStack.isEmpty()
                         && depthBeforeClosers < switchStack.peek().getBraceDepth()) {
-                    IndentationUtils.SwitchContext restored = switchStack.pop();
+                    SwitchContext restored = switchStack.pop();
                     frozenBonus = restored.getPreviousFrozenBonus();
                     activeCaseBonus = restored.getPreviousActiveCaseBonus();
                 }
@@ -148,23 +152,25 @@ public class SimpleIndentationRule extends AbstractRule {
             }
 
             if (isCaseLabel && !IndentationUtils.isArrowCase(strippedLine)) {
-                IndentationUtils.DepthDelta caseDelta = IndentationUtils.computeDepthDelta(strippedLine);
+                DepthDelta caseDelta = IndentationUtils.computeDepthDelta(strippedLine);
                 activeCaseBonus = caseDelta.getNetChange() <= 0 ? 1 : 0;
             }
 
             if (!lineIsComment && IndentationUtils.SWITCH_OPEN_PATTERN.matcher(strippedLine).find()) {
-                IndentationUtils.DepthDelta preSwitchDelta = IndentationUtils.computeDepthDelta(strippedLine);
+                DepthDelta preSwitchDelta = IndentationUtils.computeDepthDelta(strippedLine);
                 int switchBraceDepth = currentDepth + preSwitchDelta.getNetChange();
-                switchStack.push(new IndentationUtils.SwitchContext(switchBraceDepth, frozenBonus, activeCaseBonus));
+                switchStack.push(new SwitchContext(
+                        switchBraceDepth, frozenBonus, activeCaseBonus));
                 frozenBonus = frozenBonus + activeCaseBonus;
                 activeCaseBonus = 0;
             }
 
-            IndentationUtils.DepthDelta delta = IndentationUtils.computeDepthDelta(strippedLine);
+            DepthDelta delta =
+                    IndentationUtils.computeDepthDelta(strippedLine, insideBlockComment);
             int newDepth = Math.max(0, currentDepth + delta.getNetChange());
 
             while (!switchStack.isEmpty() && newDepth <= switchStack.peek().getBraceDepth() - 1) {
-                IndentationUtils.SwitchContext restored = switchStack.pop();
+                SwitchContext restored = switchStack.pop();
                 frozenBonus = restored.getPreviousFrozenBonus();
                 activeCaseBonus = restored.getPreviousActiveCaseBonus();
             }

@@ -56,10 +56,39 @@ import java.util.*;
  *
  * <h3>Configurable messages</h3>
  * Every violation message is exposed as a configurable {@code String} property using
- * {@link java.lang.String#format(String, Object...)} placeholders. Override any property
+ * {@link java.text.MessageFormat} placeholders. Override any property
  * in your ruleset XML to customize the reported message.
  */
 public class StrictJavadocRule extends AbstractJavaRulechainRule {
+
+    private static final PropertyDescriptor<Boolean> REQUIRE_TYPE_JAVADOC =
+            booleanProperty("requireTypeJavadoc",
+                    "Require Javadoc on non-private type declarations.");
+    private static final PropertyDescriptor<Boolean> REQUIRE_EXECUTABLE_JAVADOC =
+            booleanProperty("requireExecutableJavadoc",
+                    "Require Javadoc on non-private methods and constructors.");
+    private static final PropertyDescriptor<Boolean> REQUIRE_FIELD_JAVADOC =
+            booleanProperty("requireFieldJavadoc",
+                    "Require Javadoc on non-private fields.");
+    private static final PropertyDescriptor<Boolean> REQUIRE_PARAMETER_TAGS =
+            booleanProperty("requireParameterTags",
+                    "Require @param tags for formal and generic type parameters.");
+    private static final PropertyDescriptor<Boolean> REQUIRE_RETURN_TAGS =
+            booleanProperty("requireReturnTags",
+                    "Require @return on non-void methods.");
+    private static final PropertyDescriptor<Boolean> FORBID_RETURN_ON_VOID =
+            booleanProperty("forbidReturnOnVoid",
+                    "Forbid @return on void methods and constructors.");
+    private static final PropertyDescriptor<Boolean> REQUIRE_AUTHOR_TAG =
+            booleanProperty("requireAuthorTag", "Require @author on type declarations.");
+    private static final PropertyDescriptor<Boolean> REQUIRE_VERSION_TAG =
+            booleanProperty("requireVersionTag", "Require @version on type declarations.");
+    private static final PropertyDescriptor<Boolean> CHECK_UNUSED_TYPE_TAGS =
+            booleanProperty("checkUnusedTypeTags",
+                    "Report @return, @throws, and @exception on type declarations.");
+    private static final PropertyDescriptor<Boolean> ALLOW_INHERITED_DOCUMENTATION =
+            booleanProperty("allowInheritedDocumentation",
+                    "Allow undocumented overrides and Javadoc containing only {@inheritDoc}.");
 
     private static final PropertyDescriptor<String> MISSING_JAVADOC_MESSAGE =
             PropertyFactory.stringProperty("missingJavadocMessage")
@@ -193,6 +222,13 @@ public class StrictJavadocRule extends AbstractJavaRulechainRule {
                     .defaultValue(Collections.emptyList())
                     .build();
 
+    private static PropertyDescriptor<Boolean> booleanProperty(String name, String description) {
+        return PropertyFactory.booleanProperty(name)
+                .desc(description)
+                .defaultValue(true)
+                .build();
+    }
+
     public StrictJavadocRule() {
         super(
                 ASTMethodDeclaration.class,
@@ -205,6 +241,16 @@ public class StrictJavadocRule extends AbstractJavaRulechainRule {
                 ASTRecordDeclaration.class
         );
 
+        definePropertyDescriptor(REQUIRE_TYPE_JAVADOC);
+        definePropertyDescriptor(REQUIRE_EXECUTABLE_JAVADOC);
+        definePropertyDescriptor(REQUIRE_FIELD_JAVADOC);
+        definePropertyDescriptor(REQUIRE_PARAMETER_TAGS);
+        definePropertyDescriptor(REQUIRE_RETURN_TAGS);
+        definePropertyDescriptor(FORBID_RETURN_ON_VOID);
+        definePropertyDescriptor(REQUIRE_AUTHOR_TAG);
+        definePropertyDescriptor(REQUIRE_VERSION_TAG);
+        definePropertyDescriptor(CHECK_UNUSED_TYPE_TAGS);
+        definePropertyDescriptor(ALLOW_INHERITED_DOCUMENTATION);
         definePropertyDescriptor(MISSING_JAVADOC_MESSAGE);
         definePropertyDescriptor(MALFORMED_PARAM_MESSAGE);
         definePropertyDescriptor(DUPLICATE_PARAM_MESSAGE);
@@ -233,11 +279,13 @@ public class StrictJavadocRule extends AbstractJavaRulechainRule {
     public Object visit(ASTMethodDeclaration node, Object data) {
         JavadocComment comment = node.getJavadocComment();
 
-        if (comment == null && node.isOverridden()) {
+        if (comment == null && node.isOverridden()
+                && getProperty(ALLOW_INHERITED_DOCUMENTATION)) {
             return data;
         }
 
-        if (comment != null && isInheritDocOnly(comment)) {
+        if (comment != null && isInheritDocOnly(comment)
+                && getProperty(ALLOW_INHERITED_DOCUMENTATION)) {
             return data;
         }
 
@@ -279,7 +327,7 @@ public class StrictJavadocRule extends AbstractJavaRulechainRule {
             return data;
         }
 
-        if (node.getJavadocComment() == null) {
+        if (node.getJavadocComment() == null && getProperty(REQUIRE_FIELD_JAVADOC)) {
             addViolation(
                     data,
                     node,
@@ -371,13 +419,15 @@ public class StrictJavadocRule extends AbstractJavaRulechainRule {
     ) {
         JavadocComment comment = ((JavadocCommentOwner) node).getJavadocComment();
         if (comment == null) {
-            addViolation(
-                    data,
-                    node,
-                    getProperty(MISSING_JAVADOC_MESSAGE),
-                    capitalize(kind),
-                    quoted(name)
-            );
+            if (getProperty(REQUIRE_EXECUTABLE_JAVADOC)) {
+                addViolation(
+                        data,
+                        node,
+                        getProperty(MISSING_JAVADOC_MESSAGE),
+                        capitalize(kind),
+                        quoted(name)
+                );
+            }
             return;
         }
 
@@ -399,29 +449,31 @@ public class StrictJavadocRule extends AbstractJavaRulechainRule {
             }
         }
 
-        for (String parameterName : parameterNames) {
-            if (!seenParameters.contains(parameterName)) {
-                addViolation(
-                        data,
-                        node,
-                        getProperty(MISSING_PARAM_MESSAGE),
-                        kind,
-                        quoted(name),
-                        quoted(parameterName)
-                );
+        if (getProperty(REQUIRE_PARAMETER_TAGS)) {
+            for (String parameterName : parameterNames) {
+                if (!seenParameters.contains(parameterName)) {
+                    addViolation(
+                            data,
+                            node,
+                            getProperty(MISSING_PARAM_MESSAGE),
+                            kind,
+                            quoted(name),
+                            quoted(parameterName)
+                    );
+                }
             }
-        }
 
-        for (String typeParameterName : typeParameterNames) {
-            if (!seenTypeParameters.contains(typeParameterName)) {
-                addViolation(
-                        data,
-                        node,
-                        getProperty(MISSING_TYPE_PARAM_MESSAGE),
-                        kind,
-                        quoted(name),
-                        quoted(typeParameterName)
-                );
+            for (String typeParameterName : typeParameterNames) {
+                if (!seenTypeParameters.contains(typeParameterName)) {
+                    addViolation(
+                            data,
+                            node,
+                            getProperty(MISSING_TYPE_PARAM_MESSAGE),
+                            kind,
+                            quoted(name),
+                            quoted(typeParameterName)
+                    );
+                }
             }
         }
 
@@ -512,7 +564,7 @@ public class StrictJavadocRule extends AbstractJavaRulechainRule {
         }
 
         if (requiresReturnTag) {
-            if (returnTagCount == 0) {
+            if (returnTagCount == 0 && getProperty(REQUIRE_RETURN_TAGS)) {
                 addViolation(
                         data,
                         node,
@@ -520,7 +572,7 @@ public class StrictJavadocRule extends AbstractJavaRulechainRule {
                         quoted(name)
                 );
             }
-        } else if (returnTagCount > 0) {
+        } else if (returnTagCount > 0 && getProperty(FORBID_RETURN_ON_VOID)) {
             addViolation(
                     data,
                     node,
@@ -541,13 +593,15 @@ public class StrictJavadocRule extends AbstractJavaRulechainRule {
         String name = node.getSimpleName();
 
         if (comment == null) {
-            addViolation(
-                    data,
-                    node,
-                    getProperty(MISSING_JAVADOC_MESSAGE),
-                    capitalize(kind),
-                    quoted(name)
-            );
+            if (getProperty(REQUIRE_TYPE_JAVADOC)) {
+                addViolation(
+                        data,
+                        node,
+                        getProperty(MISSING_JAVADOC_MESSAGE),
+                        capitalize(kind),
+                        quoted(name)
+                );
+            }
             return;
         }
 
@@ -587,34 +641,42 @@ public class StrictJavadocRule extends AbstractJavaRulechainRule {
                 case "return":
                 case "throws":
                 case "exception": {
-                    addViolation(
-                            data,
-                            node,
-                            getProperty(UNUSED_TAG_ON_TYPE_MESSAGE),
-                            kind,
-                            quoted(name),
-                            tag.getName()
-                    );
+                    if (getProperty(CHECK_UNUSED_TYPE_TAGS)) {
+                        addViolation(
+                                data,
+                                node,
+                                getProperty(UNUSED_TAG_ON_TYPE_MESSAGE),
+                                kind,
+                                quoted(name),
+                                tag.getName()
+                        );
+                    }
                     break;
                 }
             }
         }
 
-        for (String typeParameterName : typeParameterNames) {
-            if (!seenTypeParameters.contains(typeParameterName)) {
-                addViolation(
-                        data,
-                        node,
-                        getProperty(MISSING_TYPE_PARAM_MESSAGE),
-                        kind,
-                        quoted(name),
-                        quoted(typeParameterName)
-                );
+        if (getProperty(REQUIRE_PARAMETER_TAGS)) {
+            for (String typeParameterName : typeParameterNames) {
+                if (!seenTypeParameters.contains(typeParameterName)) {
+                    addViolation(
+                            data,
+                            node,
+                            getProperty(MISSING_TYPE_PARAM_MESSAGE),
+                            kind,
+                            quoted(name),
+                            quoted(typeParameterName)
+                    );
+                }
             }
         }
 
-        validateAuthorTag(node, data, kind, name, authorCount, hasNonEmptyAuthor);
-        validateVersionTag(node, data, kind, name, versionCount, hasNonEmptyVersion);
+        if (getProperty(REQUIRE_AUTHOR_TAG) || authorCount > 0) {
+            validateAuthorTag(node, data, kind, name, authorCount, hasNonEmptyAuthor);
+        }
+        if (getProperty(REQUIRE_VERSION_TAG) || versionCount > 0) {
+            validateVersionTag(node, data, kind, name, versionCount, hasNonEmptyVersion);
+        }
     }
 
     private void validateTypeParamTag(

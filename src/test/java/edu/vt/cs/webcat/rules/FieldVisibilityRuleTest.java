@@ -347,5 +347,28 @@ class FieldVisibilityRuleTest {
                             + "}",
                     "not static final");
         }
+
+        @Test
+        void publicInnerClassInPackagePrivateOuterStillChecked() {
+            setRuleProperty(rule, "ignoreModifiersOnInnerClassFields", true);
+            assertHasViolation(
+                    "class Outer {\n"
+                            + "    public class Inner {\n"
+                            + "        public int x;\n"
+                            + "    }\n"
+                            + "}",
+                    "not static final");
+        }
+
+        @Test
+        void packagePrivateInnerClassInPublicOuterIsIgnored() {
+            setRuleProperty(rule, "ignoreModifiersOnInnerClassFields", true);
+            assertNoViolations(
+                    "public class Outer {\n"
+                            + "    class Inner {\n"
+                            + "        public int x;\n"
+                            + "    }\n"
+                            + "}");
+        }
     }
 }

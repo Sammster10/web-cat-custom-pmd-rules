@@ -26,22 +26,12 @@ dependencies {
 
 test {
     useJUnitPlatform()
-
-
     testLogging {
         events "passed", "failed"
-        showExceptions true
-        showCauses true
-        showStackTraces false
-        exceptionFormat "full"
-    }
-}
-
-sourceSets {
-    test {
-        java {
-            exclude '**/WhitespaceAndPaddingRuleTest.java'
-        }
+        showExceptions = true
+        showCauses = true
+        showStackTraces = false
+        exceptionFormat = "full"
     }
 }
 

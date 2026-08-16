@@ -94,7 +94,7 @@ public class SimplifiableTestAssertionRule extends AbstractJavaRulechainRule {
             }
         }
 
-        return null;
+        return data;
     }
 
     private boolean isPrimitive(ASTExpression node) {

@@ -4,6 +4,7 @@ import net.sourceforge.pmd.lang.ast.Node;
 import net.sourceforge.pmd.lang.document.Chars;
 import net.sourceforge.pmd.lang.document.TextDocument;
 import net.sourceforge.pmd.lang.rule.AbstractRule;
+import net.sourceforge.pmd.properties.NumericConstraints;
 import net.sourceforge.pmd.properties.PropertyDescriptor;
 import net.sourceforge.pmd.properties.PropertyFactory;
 import net.sourceforge.pmd.reporting.RuleContext;
@@ -33,7 +34,8 @@ public class LineLengthRule extends AbstractRule {
 
     private static final PropertyDescriptor<Integer> MAX_LENGTH_PROPERTY =
             PropertyFactory.intProperty("maxLength")
-                    .desc("Maximum allowed line length")
+                    .desc("Maximum allowed line length in Unicode code points")
+                    .require(NumericConstraints.inRange(1, Integer.MAX_VALUE))
                     .defaultValue(80)
                     .build();
 
@@ -74,7 +76,8 @@ public class LineLengthRule extends AbstractRule {
         String[] lines = fileContent.toString().split("\n");
         int offset = 0;
         for (String line : lines) {
-            if (line.length() > maxLength) {
+            int actualLength = line.codePointCount(0, line.length());
+            if (actualLength > maxLength) {
 
                 if (ignorePattern != null) {
                     Matcher matcher = ignorePattern.matcher(line);
@@ -90,7 +93,8 @@ public class LineLengthRule extends AbstractRule {
 
                 int startLine = textDocument.lineColumnAtOffset(offset).getLine();
 
-                ctx.addViolationWithPosition(target, startLine, startLine, message, maxLength, line.length());
+                ctx.addViolationWithPosition(
+                        target, startLine, startLine, message, maxLength, actualLength);
             }
 
             offset += line.length() + 1;

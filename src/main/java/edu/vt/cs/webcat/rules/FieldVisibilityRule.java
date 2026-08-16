@@ -86,14 +86,12 @@ public class FieldVisibilityRule extends AbstractJavaRulechainRule {
         RuleContext ctx = asCtx(data);
 
         if (getProperty(IGNORE_MODIFIERS_ON_INNER_CLASS_FIELDS)) {
-            ASTClassDeclaration enclosingClass = node.ancestors(ASTClassDeclaration.class).first();
-            if (enclosingClass != null && enclosingClass.ancestors(ASTClassDeclaration.class).first() != null) {
-                ASTClassDeclaration innerClass = enclosingClass.ancestors(ASTClassDeclaration.class).first();
-                assert innerClass != null;
-
-                if (!innerClass.hasModifiers(JModifier.PUBLIC)) {
-                    return data;
-                }
+            ASTClassDeclaration declaringClass =
+                    node.ancestors(ASTClassDeclaration.class).first();
+            if (declaringClass != null
+                    && declaringClass.isNested()
+                    && !declaringClass.hasModifiers(JModifier.PUBLIC)) {
+                return data;
             }
         }
 

@@ -1,7 +1,8 @@
 package edu.vt.cs.webcat.rules;
 
-import edu.vt.cs.webcat.rules.indentation.IndentViolation;
-import edu.vt.cs.webcat.rules.indentation.IndentationAnalyzer;
+import edu.vt.cs.webcat.rules.utils.indentation.IndentViolation;
+import edu.vt.cs.webcat.rules.utils.indentation.IndentationAnalysisResult;
+import edu.vt.cs.webcat.rules.utils.indentation.IndentationAnalyzer;
 import net.sourceforge.pmd.lang.ast.Node;
 import net.sourceforge.pmd.lang.document.Chars;
 import net.sourceforge.pmd.lang.document.TextDocument;
@@ -97,7 +98,7 @@ public class DynamicIndentationRule extends AbstractRule {
         Chars fileContent = document.getText();
         String source = fileContent.toString();
 
-        IndentationAnalyzer.AnalysisResult result =
+        IndentationAnalysisResult result =
                 IndentationAnalyzer.analyze(source, target);
 
         boolean tabsBanned = getProperty(BAN_TABS);
@@ -133,8 +134,8 @@ public class DynamicIndentationRule extends AbstractRule {
             context.addViolationWithPosition(
                     target, pmdLine, pmdLine, indentMsg,
                     iv.getLineNumber(),
-                    extractExpected(iv.getMessage()),
-                    extractActual(iv.getMessage()));
+                    iv.getExpectedSpaces(),
+                    iv.getActualSpaces());
         }
     }
 
@@ -179,28 +180,5 @@ public class DynamicIndentationRule extends AbstractRule {
         return offset;
     }
 
-    private static String extractExpected(String message) {
-        java.util.regex.Matcher m = java.util.regex.Pattern
-                .compile("expected (either \\d+ spaces or at least \\d+|\\d+|at least \\d+) spaces")
-                .matcher(message);
-        if (m.find()) {
-            return m.group(1);
-        }
-        java.util.regex.Matcher m2 = java.util.regex.Pattern
-                .compile("multiple of (\\d+) spaces").matcher(message);
-        if (m2.find()) {
-            return "a multiple of " + m2.group(1);
-        }
-        return "?";
-    }
-
-    private static String extractActual(String message) {
-        java.util.regex.Matcher m = java.util.regex.Pattern
-                .compile("found (\\d+)").matcher(message);
-        if (m.find()) {
-            return m.group(1);
-        }
-        return "?";
-    }
 }
 

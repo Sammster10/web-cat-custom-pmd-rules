@@ -278,6 +278,30 @@ class HiddenFieldRuleTest {
                             + "}",
                     "Local variable");
         }
+
+        @Test
+        void localVariableInLocalClassMethodUsesLocalClassScope() {
+            assertNoViolations("class T {\n"
+                    + "    private int x;\n"
+                    + "    void m() {\n"
+                    + "        class Local {\n"
+                    + "            void nested() { int x = 0; }\n"
+                    + "        }\n"
+                    + "    }\n"
+                    + "}");
+        }
+
+        @Test
+        void localVariableInAnonymousClassMethodUsesAnonymousClassScope() {
+            assertNoViolations("class T {\n"
+                    + "    private int x;\n"
+                    + "    void m() {\n"
+                    + "        Runnable task = new Runnable() {\n"
+                    + "            public void run() { int x = 0; }\n"
+                    + "        };\n"
+                    + "    }\n"
+                    + "}");
+        }
     }
 
     @Nested
