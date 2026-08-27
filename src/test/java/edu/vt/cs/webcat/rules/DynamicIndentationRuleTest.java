@@ -1411,6 +1411,16 @@ class DynamicIndentationRuleTest {
     @Nested
     class OperatorContinuation {
         @Test
+        void prefixIncrementAndDecrementStayAtBaseIndent() {
+            assertNoViolations(fourSpaceClass(
+                    "    void m() {",
+                    "        int value = 0;",
+                    "        ++value;",
+                    "        --value;",
+                    "    }"));
+        }
+
+        @Test
         void plusOperatorAtMultipleOfUnit() {
             assertNoViolations(fourSpaceClass(
                     "    int compute() {",

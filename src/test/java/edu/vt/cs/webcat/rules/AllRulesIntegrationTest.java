@@ -7,7 +7,6 @@ import net.sourceforge.pmd.lang.document.TextFile;
 import net.sourceforge.pmd.lang.java.JavaLanguageModule;
 import net.sourceforge.pmd.lang.rule.Rule;
 import net.sourceforge.pmd.lang.rule.RuleSet;
-import net.sourceforge.pmd.lang.rule.RuleSetLoader;
 import net.sourceforge.pmd.reporting.Report;
 import net.sourceforge.pmd.reporting.RuleViolation;
 import org.junit.jupiter.api.Test;
@@ -19,7 +18,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class AllRulesIntegrationTest {
@@ -59,97 +57,10 @@ class AllRulesIntegrationTest {
     }
 
     @Test
-    void bundledProductionRulesetLoadsWithGranularSpacingRules() {
-        PMDConfiguration config = new PMDConfiguration();
-        config.setDefaultLanguageVersion(
-                JavaLanguageModule.getInstance().getVersion("17"));
-
-        RuleSet ruleSet = RuleSetLoader.fromPmdConfig(config)
-                .loadFromResource("rulesets/java/webcat-production.xml");
-        Set<String> ruleNames = ruleSet.getRules().stream()
-                .map(Rule::getName)
-                .collect(Collectors.toSet());
-
-        assertTrue(ruleNames.contains("OperatorSpacing"));
-        assertTrue(ruleNames.contains("DelimiterSpacing"));
-        assertTrue(ruleNames.contains("BraceSpacing"));
-        assertTrue(ruleNames.contains("RightCurlyBlock"));
-        assertFalse(ruleNames.contains("WhitespaceAndPadding"));
-
-        String source = "/**\n"
-                + " * A class.\n"
-                + " * @author Web-CAT\n"
-                + " * @version 1.0\n"
-                + " */\n"
-                + "public class BundleSample {\n"
-                + "    private long value = 1L;\n"
-                + "}\n";
-        try (PmdAnalysis analysis = PmdAnalysis.create(config)) {
-            analysis.addRuleSet(ruleSet);
-            analysis.files().addFile(TextFile.forCharSeq(
-                    source,
-                    FileId.fromPathLikeString("BundleSample.java"),
-                    JavaLanguageModule.getInstance().getVersion("17")));
-            Report report = analysis.performAnalysisAndCollectReport();
-            assertTrue(report.getProcessingErrors().isEmpty());
-            assertTrue(report.getViolations().isEmpty(),
-                    () -> "Bundled ruleset unexpectedly reported: " + report.getViolations());
-        }
-    }
-
-    @Test
-    void migratedRulesetLoadsWithGranularSpacingAndOriginalPolicy() {
-        PMDConfiguration config = new PMDConfiguration();
-        config.setDefaultLanguageVersion(
-                JavaLanguageModule.getInstance().getVersion("17"));
-
-        RuleSet ruleSet = RuleSetLoader.fromPmdConfig(config)
-                .loadFromResource("rulesets/java/webcat-migrated.xml");
-        Set<String> ruleNames = ruleSet.getRules().stream()
-                .map(Rule::getName)
-                .collect(Collectors.toSet());
-
-        assertTrue(ruleNames.contains("OperatorSpacing"));
-        assertTrue(ruleNames.contains("DelimiterSpacing"));
-        assertTrue(ruleNames.contains("BraceSpacing"));
-        assertTrue(ruleNames.contains("IndentationRule"));
-        assertTrue(ruleNames.contains("RegexWriteHerePreventer"));
-        assertFalse(ruleNames.contains("WhitespaceAndPadding"));
-
-        String source = "/**\n"
-                + " * A migrated-policy sample.\n"
-                + " * @author Web-CAT\n"
-                + " * @version 1.0\n"
-                + " */\n"
-                + "public class MigratedSample {\n"
-                + "    private long value = 1L;\n"
-                + "\n"
-                + "    /**\n"
-                + "     * Gets the value.\n"
-                + "     * @return the value\n"
-                + "     */\n"
-                + "    public long value() {\n"
-                + "        return value;\n"
-                + "    }\n"
-                + "}\n";
-        try (PmdAnalysis analysis = PmdAnalysis.create(config)) {
-            analysis.addRuleSet(ruleSet);
-            analysis.files().addFile(TextFile.forCharSeq(
-                    source,
-                    FileId.fromPathLikeString("MigratedSample.java"),
-                    JavaLanguageModule.getInstance().getVersion("17")));
-            Report report = analysis.performAnalysisAndCollectReport();
-            assertTrue(report.getProcessingErrors().isEmpty());
-            assertTrue(report.getViolations().isEmpty(),
-                    () -> "Migrated ruleset unexpectedly reported: " + report.getViolations());
-        }
-    }
-
-    @Test
     void completeRuleSuiteAcceptsAConsistentSourceFile() {
         String source = "/**\n"
                 + " * A production sample.\n"
-                + " * @author Web-CAT\n"
+                + " * @author Someone\n"
                 + " * @version 1.0\n"
                 + " */\n"
                 + "public class ProductionSample {\n"

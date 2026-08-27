@@ -9,7 +9,7 @@ import java.util.regex.Pattern;
 public final class LineClassifier {
 
     private static final Pattern STARTS_WITH_CONTINUATION_TOKEN = Pattern.compile(
-            "^\\s*(?:\\.|,|->|\\)|]|\\+[^+]?|-[^-]?|\\*|/[^/*]|%|&&|\\|\\||\\||&|\\?|:(?!:))");
+            "^\\s*(?:\\.|,|->|\\)|]|\\+(?!\\+)|-(?!-)|\\*|/[^/*]|%|&&|\\|\\||\\||&|\\?|:(?!:))");
 
     /*
      * Deliberately excludes bare < and >. They are grammar-sensitive in Java:
@@ -309,8 +309,8 @@ public final class LineClassifier {
     private static boolean startsWithExplicitContinuationToken(String trimmed) {
         return trimmed.startsWith(".")
                 || trimmed.startsWith(",")
-                || trimmed.startsWith("+")
-                || trimmed.startsWith("-")
+                || (trimmed.startsWith("+") && !trimmed.startsWith("++"))
+                || (trimmed.startsWith("-") && !trimmed.startsWith("--"))
                 || trimmed.startsWith("*")
                 || trimmed.startsWith("/")
                 || trimmed.startsWith("%")
